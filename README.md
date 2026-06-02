@@ -147,7 +147,7 @@ This is necessary because it is *fun*. And fun, cap'n, is reason enough.
 
 ---
 
-### VIII. A STORY (UNRELATED TO ANYTHING)
+### VIII. THE EIGHTH README SECTION - PIECES OF EIGHT!
 
 Ah, this reminds me. Back in ought-three — or was it ought-four, the years run together when ye spend enough of them at sea — I was workin' at a fishmonger's in Wolverhampton. Nice place. Smell were something chronic. Anyway, the owner, a man called Gerald, had a cat. Big orange tom. Mean as a bucket of eels. And this cat — I never knew its name, Gerald called it "the cat" and that seemed to be enough for both of them — this cat had somehow learned to open the refrigerator where we kept the cod.
 
