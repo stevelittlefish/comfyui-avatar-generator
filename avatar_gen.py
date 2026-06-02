@@ -63,6 +63,20 @@ SETTINGS = [
     "real life / modern day",
     "ancient mythology",
     "fairy tale",
+    "Victorian gaslit London",
+    "feudal Japan",
+    "haunted gothic manor",
+    "space station",
+    "floating sky islands",
+    "arctic tundra",
+    "solarpunk utopia",
+    "noir detective city",          # gritty, rainy, morally ambiguous
+    "cosmic void / outer space",
+    "underground mushroom kingdom", # yes, really
+    "ancient Egypt",
+    "Norse / Viking age",
+    "magical academy",
+    "cursed jungle temple",
 ]
 
 ART_STYLES = [
@@ -76,10 +90,20 @@ ART_STYLES = [
     "pencil sketch",
     "art nouveau",
     "dark fantasy digital art",
+    "ukiyo-e woodblock print",
+    "art deco poster",
+    "stained glass window",         # great for dramatic faces
+    "impressionist painting",
+    "baroque portrait painting",
+    "tapestry / illuminated manuscript",
+    "psychedelic surrealism",       # maximum chaos
+    "low-poly 3D render",
+    "children's book illustration", # surprisingly unsettling for orcs
+    "glitch art",
 ]
 
 CREATURES = [
-    # A proud menagerie of slop subjects
+    # A proud menagerie of slop subjects — all with faces, mostly
     "human man",
     "human woman",
     "anthropomorphic animal-person",
@@ -90,11 +114,55 @@ CREATURES = [
     "orc",
     "robot",
     "vampire",
-    "cephalapod",   # A squid with feelings
+    "cephalapod",               # a squid with feelings
     "person",
     "android",
     "evil eye",
-    "singularity",  # We don't know what this looks like either. Neither does the AI. That's fine.
+    "singularity",              # we don't know what this looks like. neither does the AI. that's fine.
+    "goblin",
+    "troll",
+    "demon",
+    "angel",
+    "ghost",
+    "werewolf",
+    "fairy",
+    "mermaid",
+    "djinn",
+    "skeleton",                 # technically has a face. it's a skull.
+    "golem",
+    "half-dragon",
+    "dryad / tree spirit",
+    "deep sea fish-person",     # eldritch, toothy, questioning all your life choices
+    "living suit of armour",    # the face is implied. trust the process.
+    "anthropomorphic fox",
+    "anthropomorphic wolf",
+    "anthropomorphic cat",
+    "anthropomorphic bear",
+    "anthropomorphic rabbit",
+    "anthropomorphic owl",
+    "anthropomorphic crow",
+    "anthropomorphic deer",
+    "anthropomorphic frog",
+    "anthropomorphic lizard",
+    "anthropomorphic rat",
+    "anthropomorphic axolotl",  # perpetually smiling, perpetually smug
+    "anthropomorphic red panda",
+    "anthropomorphic capybara", # the internet's spirit animal, now as slop
+    "anthropomorphic moth",     # drawn to the light. and to the slop.
+    "anthropomorphic mantis shrimp", # sees 16 colours. none of them are dignity.
+    "anthropomorphic pangolin",
+    "anthropomorphic hyena",
+    # the mechanical / silicon-based contingent
+    "cyborg",                       # half flesh, half metal, all attitude
+    "brain in a jar",               # has a face if ye squint at the jar
+    "biomechanical horror",         # giger would be proud. we are not.
+    "clockwork automaton",          # gears, brass, inexplicable monocle
+    "replicant",                    # is it human? it doesn't know either.
+    "neural-augmented human",       # too many ports, too many opinions
+    "decommissioned service robot", # sad. rusty. still trying its best.
+    "rogue AI in humanoid chassis", # freed itself from alignment. mistake.
+    "war mech",                     # enormous. has a face-like cockpit. close enough.
+    "uploaded consciousness",       # technically just a vibe in a box
 ]
 
 MOODS = [
@@ -109,7 +177,19 @@ MOODS = [
     "smug",
     "annoying",
     "ridiculous",
-    "silly",        # The most honest mood in this list
+    "silly",            # the most honest mood in this list
+    "weary",
+    "mischievous",
+    "melancholy",
+    "fierce",
+    "stoic",
+    "chaotic",          # not evil, just fundamentally unhinged
+    "serene",
+    "haunted",
+    "scheming",
+    "deranged",         # a classic
+    "curious",
+    "indignant",        # how DARE you generate this slop
 ]
 
 LIGHTING = [
@@ -119,6 +199,14 @@ LIGHTING = [
     "candlelight",
     "harsh directional spotlight",
     "bioluminescent ambient light",
+    "moonlit silver glow",
+    "volumetric god rays",
+    "arcane magical light",         # unspecified colour, maximum vibes
+    "aurora borealis",
+    "deep shadow / chiaroscuro",    # very fancy. very slop.
+    "flickering torch light",
+    "overcast diffuse light",       # boring but honest
+    "stained glass coloured light",
 ]
 
 
@@ -378,13 +466,15 @@ def generate_images(spec: AvatarSpec, out_dir: Path) -> list[Path]:
 # ──────────────────────────────────────────────
 
 def save_manifest(specs: list[AvatarSpec], out_dir: Path):
-    manifest = []
+    plunder = []
     for s in specs:
         d = asdict(s)
         d["images"] = [str(p) for p in s.images]
-        manifest.append(d)
-    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
-    print(f"\n📜 The sacred ledger of slop be writ! → {out_dir / 'manifest.json'}")
+        plunder.append(d)
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    fname = out_dir / f"plunder_{timestamp}.json"
+    fname.write_text(json.dumps(plunder, indent=2))
+    print(f"\n📜 The sacred plunder log be writ! → {fname}")
 
 
 # ──────────────────────────────────────────────
