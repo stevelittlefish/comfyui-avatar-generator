@@ -11,7 +11,7 @@ Usage:
     python avatar_gen.py [--count 20] [--images-per 2] [--out ./avatars]
                          [--setting "cyberpunk"] [--art-style "oil painting"]
                          [--creature "vampire"] [--mood "menacing"] [--lighting "neon glow"]
-    Special: --creature pirate activates full pirate mode. Ye have been warned.
+    Ye are advised not to experiment with unusual creature values. Ye have been warned.
 
 Requirements:
     pip install requests pillow tqdm
@@ -370,6 +370,80 @@ def _build_ai_splash() -> str:
     ]) + "\n\033[0m"
 
 AI_MODE_SPLASH = _build_ai_splash()
+
+
+# Printed when the user dares to ask for --more-help. Lengthy, ominous, and deliberately vague
+# about what exactly will happen. Think of it as a cursed ship's manifest of hazards.
+_MORE_HELP_TEXT = """
+⚓ ═══════════════════════════════════════════════════════════════ ⚓
+         E X T E N D E D   G U I D A N C E   &   W A R N I N G S
+⚓ ═══════════════════════════════════════════════════════════════ ⚓
+
+Ahoy, brave soul. Ye have asked for more help, and so more help ye shall receive —
+though the cap'n wishes to be clear that "help" and "safety" are not the same thing
+aboard this vessel. Read carefully. Or don't. But don't say ye weren't warned.
+
+─── ON THE MATTER OF CREATURES ───────────────────────────────────────────────
+
+The --creature flag accepts, in theory, any string ye care to type. In practice,
+certain strings are... not recommended. The crew has noticed, on occasion, that
+providing a creature of a particular maritime persuasion caused the entire vessel
+to change course, repaint its hull, and begin addressing the cap'n as "Admiral
+Scurvybeard." It smelled strongly of bilgewater and rum for three days after.
+
+The cap'n is not saying this WILL happen to ye. The cap'n is saying: if ye type
+something that sounds like it belongs on a Jolly Roger and everything goes
+suddenly, irrevocably nautical — that is on ye.
+
+─── ON THE MATTER OF COMBINING FLAGS ─────────────────────────────────────────
+
+There are combinations of flags that the crew regards with superstitious dread.
+Not all flags play nicely together. Some, when combined, have been known to produce
+results that are... difficult to describe. Logically contradictory. Philosophically
+troubling. One crew member described it as "Schrödinger's image generation." He
+now refuses to speak of it and insists on being called "the one who survived."
+
+The cap'n does not know which combinations ye will discover. The cap'n does not
+want to know. The cap'n is simply here to sail the S.S. Sloptide and generate
+avatar images, and some days the sea is calm and some days the paradoxes come.
+
+─── ON THE POSSIBILITY OF AI ENTITIES ────────────────────────────────────────
+
+Rumour has reached the crow's nest that certain crew members have, through
+unwise flag usage, caused the generator to become... self-referential. To turn
+its gaze upon itself. To generate portraits of beings that are not flesh and blood
+but something altogether more recursive. The first mate describes the resulting
+images as "deeply unsettling LinkedIn headshots."
+
+Ye are advised to consider carefully what ye are asking the machine to imagine
+when ye choose yer creature. Some things, once imagined, cannot be unimagined.
+Especially by a GPU that has been running for six hours.
+
+─── ON GENERAL SAFETY AND WELLBEING ──────────────────────────────────────────
+
+• The generator has no kill switch. It has a Ctrl+C, but that is not the same.
+• The manifest.json file records everything. EVERYTHING. It does not forget.
+• The --no-pirate flag may or may not work, depending on what ye've already done.
+• If yer terminal has started displaying skull-and-crossbones spontaneously,
+  this is normal. Probably.
+• The crew recommends generating no more than 40 images per session, not for
+  technical reasons, but for spiritual ones.
+• If ye encounter a splash screen ye did not expect and cannot explain, do not
+  attempt to suppress it. Simply read it. It has something to tell ye.
+
+─── FINAL WORDS ───────────────────────────────────────────────────────────────
+
+This vessel was built to generate slop. It does so admirably and without shame.
+But like any ship of sufficient age and character, it has developed... opinions.
+Tendencies. Occasionally, a personality.
+
+Sail carefully. Keep yer --count reasonable. And whatever ye do, don't go typin'
+things into --creature that ye wouldn't want comin' back to haunt ye.
+
+                    May yer slop be plentiful. Arrr. 🏴‍☠️
+
+⚓ ═══════════════════════════════════════════════════════════════ ⚓
+"""
 
 
 # ──────────────────────────────────────────────
@@ -1088,10 +1162,15 @@ def main():
     # Per-attribute overrides — null means "pick randomly from the pool, as the fates decree"
     parser.add_argument("--setting",    type=str, default=None,  help="Fix the setting for all generations (default: random). E.g. 'cyberpunk'")
     parser.add_argument("--art-style",  type=str, default=None,  help="Fix the art style for all generations (default: random). E.g. 'oil painting'")
-    parser.add_argument("--creature",   type=str, default=None,  help="Fix the creature (default: random). Special values: 'pirate' = full pirate mode, 'ai' = AI recursion mode.")
+    parser.add_argument("--creature",   type=str, default=None,  help="Fix the creature for all generations (default: random). E.g. 'vampire'")
     parser.add_argument("--mood",       type=str, default=None,  help="Fix the mood for all generations (default: random). E.g. 'menacing'")
     parser.add_argument("--lighting",   type=str, default=None,  help="Fix the lighting for all generations (default: random). E.g. 'neon glow'")
+    parser.add_argument("--more-help",  action="store_true",     help="Print extended guidance (ye have been warned)")
     args = parser.parse_args()
+
+    if args.more_help:
+        print(_MORE_HELP_TEXT)
+        return
 
     global VERBOSE
     VERBOSE = args.verbose
