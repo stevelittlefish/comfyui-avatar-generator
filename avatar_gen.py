@@ -589,66 +589,130 @@ def ask_vllm_pirate(spec: PirateSpec) -> str:
 # ──────────────────────────────────────────────────────────────────
 
 PARADOX_SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer specialising in \
-dark, eldritch, and post-apocalyptic horror portraiture.
-Write a single, rich SDXL prompt for a portrait/avatar image (face and shoulders only, close-up).
+dark, eldritch, and post-apocalyptic horror.
+Write a single, rich SDXL prompt for a close-up image of a non-human entity (face/head and shoulders).
 
 Rules:
 - Output ONLY the prompt text — no explanation, no labels, no markdown.
-- Start with the most important visual horror descriptors.
-- Lean into cosmic dread, dark atmosphere, and post-apocalyptic ruin.
+- Do NOT open with "hyper-detailed portrait of" or any generic portrait phrase. \
+  Start with the most striking physical descriptor of the entity itself.
+- The subject must NOT look like a normal human. It is eldritch, post-apocalyptic, \
+  monstrous, or cosmically wrong. Lean hard into the specific physical features provided.
+- The entity MUST have a prominent, clearly visible face or face-like structure \
+  dominating the composition — but it must be monstrous and alien, not mammalian. \
+  Eyes, a mouth analogue, or sensory organs should be unmistakably present and prominent.
+- Lean into cosmic dread, dark atmosphere, decay, and post-apocalyptic ruin.
 - 60-120 words. Dense with descriptors, comma-separated.
 - Do NOT include negative prompts."""
 
+# One of these is ALWAYS included — guarantees a prominent face structure without
+# drifting human. The face must exist. It must be horrible.
+ELDRITCH_FACE_FEATURES = [
+    "a single enormous void-black eye dominating the entire face",
+    "compound eyes covering the full head surface, each reflecting a different dead world",
+    "a vast lamprey-like maw as the central facial feature, ringed with inward-pointing teeth",
+    "deep-set predator eyes burning with cold eldritch light, no other features visible",
+    "a face-like arrangement of bioluminescent sensory organs in place of eyes and mouth",
+    "multiple eyes arranged in a radially symmetric pattern, none of them blinking",
+    "a beak of fused bone flanked by writhing sensory tendrils",
+    "a face like an anglerfish: enormous jaw, tiny eyes, lit from within by decay",
+    "eyes like cracked obsidian mirrors, reflecting nothing, seeing everything",
+    "a face of shifting shadow with two pale lights where the eyes should be",
+    "a cluster of smaller mouths arranged where a face would normally be",
+    "no eyes — only a wide, lipless mouth running the full width of the head",
+]
+
+# Random physical features injected per-call to force variety out of the LLM.
+# The more revolting, the better. This is the paradox. There is no dignity here.
+ELDRITCH_FEATURES = [
+    "writhing tentacles where the mouth should be",
+    "dripping with luminescent slime",
+    "skin like cracked deep-sea obsidian",
+    "eyes replaced by swirling void portals",
+    "teeth at structurally inadvisable angles",
+    "face partially inverted",
+    "weeping black ichor from every surface",
+    "partially translucent with organs faintly visible",
+    "made of compressed living shadow",
+    "skin peeling to reveal cold starlight beneath",
+    "merged with corroded post-apocalyptic machinery",
+    "face splitting open to reveal a second, worse face",
+    "covered in softly glowing necrotic sigils",
+    "half-dissolved into dark energy",
+    "multiple overlapping ghostly forms occupying the same space",
+    "bioluminescent rot spreading across the surface",
+    "rust and exposed bone fused together",
+    "trailing wisps of destroyed spacetime",
+    "surrounded by slowly orbiting debris and bone fragments",
+    "skin texture of a deep-sea anglerfish",
+    "a void where the torso should be, stars visible through it",
+    "hair replaced by slow-moving living worms",
+    "neck too long, vertebrae visible",
+    "fingers extending into the frame at impossible lengths",
+    "mouth full of smaller mouths",
+    "one eye vastly larger than any eye has a right to be",
+    "surface covered in barnacles and deep-sea growth",
+    "body partially phased between dimensions, edges flickering",
+    "skeletal structure wrong in ways that are hard to articulate",
+    "surrounded by a halo of shattered glass frozen mid-explosion",
+]
+
 PARADOX_INSTRUCTIONS = [
     # 1 — The Singularity Itself
-    """Generate an SDXL portrait prompt for an ELDRITCH SINGULARITY — a point where \
-reality folded inward and gained terrible consciousness. It gazes outward from behind \
-the event horizon of its own existence. Post-apocalyptic wasteland sky, impossible \
-geometry, the face of something that devoured physics and found it insufficient. \
-Close-up portrait, face and shoulders.""",
+    """Generate an SDXL prompt for an ELDRITCH SINGULARITY — a point where \
+reality folded inward and gained terrible consciousness. Post-apocalyptic wasteland sky, \
+impossible geometry, the surface of something that devoured physics and found it insufficient. \
+Close-up, face and shoulders, non-human entity.""",
 
     # 2 — The Thing That Came Through
-    """Generate an SDXL portrait prompt for a VOID ENTITY that crawled through a rent \
+    """Generate an SDXL prompt for a VOID ENTITY that crawled through a rent \
 in reality left open by the collapse of civilisation. The apocalypse was not the end — \
-it was the door. This came through it. Nuclear ash sky, dead world, unknowable dark \
-intelligence behind its gaze, the patient certainty of something that has already won. \
-Close-up portrait, face and shoulders.""",
+it was the door. Nuclear ash sky, dead world, unknowable dark intelligence, \
+the patient certainty of something that has already won. \
+Close-up, face and shoulders, non-human entity.""",
 
     # 3 — The Paradox Made Flesh
-    """Generate an SDXL portrait prompt for PARADOX INCARNATE — a being that exists \
-solely because two mutually exclusive truths were demanded simultaneously. It is the \
-physical form of logical impossibility made manifest. Dark post-apocalyptic aesthetic, \
-fractured reality, the face of something that cannot exist but does, reality warping \
-around its edges. Close-up portrait, face and shoulders.""",
+    """Generate an SDXL prompt for PARADOX INCARNATE — a being that exists \
+solely because two mutually exclusive truths were demanded simultaneously. \
+The physical form of logical impossibility. Dark post-apocalyptic aesthetic, \
+fractured reality warping around its edges, something that cannot exist but does. \
+Close-up, face and shoulders, non-human entity.""",
 
     # 4 — The Last Witness
-    """Generate an SDXL portrait prompt for THE LAST WITNESS — an ancient eldritch \
-entity that watched civilisation after civilisation rise, fall, and rot, and now sits \
-in the ruins of the final one. Patient. Terrible. Utterly unimpressed. \
-Post-apocalyptic wasteland, dying red sky, ruined towers in the distance, the face \
-of something that has seen the end of all things and is mildly bored by it. \
-Close-up portrait, face and shoulders.""",
+    """Generate an SDXL prompt for THE LAST WITNESS — an ancient eldritch \
+entity in the ruins of the final civilisation. Patient. Terrible. Utterly unimpressed. \
+Post-apocalyptic wasteland, dying red sky, ruined towers in the distance, \
+something that has seen the end of all things and found it underwhelming. \
+Close-up, face and shoulders, non-human entity.""",
 
     # 5 — The Merged
-    """Generate an SDXL portrait prompt for THE MERGED — a human who reached into \
-eldritch darkness at the exact moment of the apocalypse and fused with it. \
-Part flesh, part void, part cosmic horror, entirely beyond classification. \
-Something vast and inhuman staring out through eyes that used to be human. \
-Post-apocalyptic horror, dim dying light, the smell of entropy made visual. \
-Close-up portrait, face and shoulders.""",
+    """Generate an SDXL prompt for THE MERGED — what remains after a living thing \
+fused with eldritch darkness at the moment of the apocalypse. \
+Part flesh, part void, part cosmic horror, entirely unclassifiable. \
+Post-apocalyptic horror, dim dying light, entropy made visible. \
+Close-up, face and shoulders, non-human entity.""",
 ]
 
 
 def ask_vllm_paradox(spec: ParadoxSpec) -> str:
     """Drag the LLM into the paradox and demand it describe the indescribable."""
+    # Always pick one face feature (guarantees a prominent non-human face) plus
+    # 2-4 body/texture features for variety. The LLM must work with what it's given.
+    face_feature = random.choice(ELDRITCH_FACE_FEATURES)
+    body_features = random.sample(ELDRITCH_FEATURES, k=random.randint(2, 4))
+    all_features = [face_feature] + body_features
+    instruction = (
+        PARADOX_INSTRUCTIONS[spec.instruction_index]
+        + f"\n\nThe entity MUST incorporate these specific physical features: {', '.join(all_features)}."
+    )
     url = f"{VLLM_BASE}/v1/chat/completions"
     payload = {
         "model": VLLM_MODEL,
         "messages": [
             {"role": "system", "content": PARADOX_SYSTEM_PROMPT},
-            {"role": "user",   "content": PARADOX_INSTRUCTIONS[spec.instruction_index]},
+            {"role": "user",   "content": instruction},
         ],
-        "temperature": 0.95,  # extra chaos — the singularity demands it
+        "temperature": 1.2,  # maximum chaos — the singularity has no respect for coherence
         "max_tokens":  200,
     }
     resp = requests.post(url, json=payload, timeout=60)
