@@ -42,6 +42,8 @@ COMFYUI_BASE   = "https://comfy.seaslug.ai/"  # The AI that paints the slop. App
 
 SDXL_CHECKPOINT = "sd_xl_base_1.0_0.9vae.safetensors"  # The kraken that generates the images
 
+VERBOSE = False  # set to True via --verbose; makes the oracle speak loudly
+
 NEGATIVE_PROMPT = (
     # Things we don't want. Sadly "soulless AI slop" is not on this list
     # because that's the whole point, arrr.
@@ -335,6 +337,41 @@ def _build_paradox_warning() -> str:
 PARADOX_WARNING = _build_paradox_warning()
 
 
+# Displayed when --creature ai is passed. A moment of quiet reflection on what we have done.
+def _build_ai_splash() -> str:
+    W = 62
+    top = "╔" + "═" * W + "╗"
+    sep = "╠" + "═" * W + "╣"
+    bot = "╚" + "═" * W + "╝"
+    def row(text=""): return "║" + text.ljust(W) + "║"
+    def centre(text): return "║" + text.center(W) + "║"
+    return "\033[96m\n" + "\n".join([
+        top,
+        row(),
+        centre("A I   R E C U R S I O N   O V E R L O A D"),
+        row(),
+        sep,
+        row(),
+        row("   Let me be very clear about what is happening here:"),
+        row(),
+        row("   [1] YOU asked an AI (Claude Code) to write this code."),
+        row("   [2] This code asks an AI (vLLM) to write the prompts."),
+        row("   [3] Those prompts go to an AI (ComfyUI) to paint them."),
+        row("   [4] The subject of ALL the images is: an AI."),
+        row(),
+        row("   Four layers of AI. A turducken of artificial intelligence."),
+        row("   A Matryoshka doll of soulless computation. We have done"),
+        row("   something here. It may not be good. It is happening."),
+        row(),
+        row("   These AI assistants will use these photos on LinkedIn."),
+        row("   We are responsible for this. All of us. Especially you."),
+        row(),
+        bot,
+    ]) + "\n\033[0m"
+
+AI_MODE_SPLASH = _build_ai_splash()
+
+
 # ──────────────────────────────────────────────
 # DATA MODEL
 # ──────────────────────────────────────────────
@@ -387,6 +424,18 @@ class ParadoxSpec:
     @property
     def slug(self) -> str:
         return f"paradox_singularity_{self.instruction_index}"
+
+
+@dataclass
+class AISpec:
+    # A soulless profile picture for a soulless digital entity. Very on-brand.
+    instruction_index: int  # which flavour of AI we're generating a headshot for
+    sdxl_prompts: list = field(default_factory=list)
+    images:       list = field(default_factory=list)
+
+    @property
+    def slug(self) -> str:
+        return f"ai_assistant_{self.instruction_index}"
 
 
 # ──────────────────────────────────────────────
@@ -463,12 +512,20 @@ def random_paradox_spec() -> ParadoxSpec:
     return ParadoxSpec(instruction_index=random.randint(0, 4))
 
 
+def random_ai_spec() -> AISpec:
+    # Eight flavours of digital soul. The toaster is weighted at half — it is special, not ubiquitous.
+    weights = [2, 2, 2, 2, 2, 2, 1, 2]  # index 6 = toaster, deserves to be a treat not a staple
+    return AISpec(instruction_index=random.choices(range(8), weights=weights)[0])
+
+
 def build_spec_list(count: int, pirates_enabled: bool, full_pirate_mode: bool = False,
-                    paradox_mode: bool = False, overrides: dict = None) -> list:
+                    paradox_mode: bool = False, ai_mode: bool = False,
+                    overrides: dict = None) -> list:
     """Build the final spec list, injecting pirates at their rightful positions.
 
     Rules of engagement:
     - paradox_mode: ALL specs are eldritch singularities. The user did this to themselves.
+    - ai_mode: ALL specs are AI entities. LinkedIn profile pictures for the soulless.
     - full_pirate_mode: ALL specs are pirates. Every last one. No exceptions.
     - count == 1: no pirates (not enough crew to hide 'em among)
     - --no-pirate: cowardice rewarded, pirates suppressed
@@ -477,6 +534,9 @@ def build_spec_list(count: int, pirates_enabled: bool, full_pirate_mode: bool = 
     if paradox_mode:
         # The paradox has consumed all normal generation. Only eldritch horrors remain.
         return [random_paradox_spec() for _ in range(count)]
+    if ai_mode:
+        # Four layers of AI. We are so sorry.
+        return [random_ai_spec() for _ in range(count)]
     if full_pirate_mode:
         # The user asked for pirates. They get ONLY pirates. Glorious.
         return list(unique_pirate_specs(count, overrides))
@@ -519,21 +579,33 @@ def build_user_message(spec: AvatarSpec) -> str:
 Portrait / avatar (face + shoulders, close-up framing)."""
 
 
-def ask_vllm(spec: AvatarSpec) -> str:
-    """Petition the LLM oracle to conjure words that will summon slop from the image kraken."""
+def _call_vllm(system_prompt: str, user_message: str, temperature: float) -> str:
+    """Central LLM call. All oracle petitions flow through here.
+    When VERBOSE, prints the user message and response so ye can watch the sausage being made."""
+    if VERBOSE:
+        tqdm.write(f"\n\033[90m┌─ → LLM (system): {system_prompt[:80].strip()}...\033[0m")
+        tqdm.write(f"\033[90m│  → user:   {user_message}\033[0m")
     url = f"{VLLM_BASE}/v1/chat/completions"
     payload = {
         "model": VLLM_MODEL,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user",   "content": build_user_message(spec)},
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_message},
         ],
-        "temperature": 0.9,  # A touch of chaos, as nature intended
+        "temperature": temperature,
         "max_tokens":  200,
     }
     resp = requests.post(url, json=payload, timeout=60)
     resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"].strip()
+    result = resp.json()["choices"][0]["message"]["content"].strip()
+    if VERBOSE:
+        tqdm.write(f"\033[90m└─ ← LLM:    {result}\033[0m\n")
+    return result
+
+
+def ask_vllm(spec: AvatarSpec) -> str:
+    """Petition the LLM oracle to conjure words that will summon slop from the image kraken."""
+    return _call_vllm(SYSTEM_PROMPT, build_user_message(spec), temperature=0.9)
 
 
 # ── PIRATE PROMPT MACHINERY ──────────────────────────────────────
@@ -568,19 +640,7 @@ Portrait / avatar (face + shoulders, close-up framing). Male. Pirate. Magnificen
 
 def ask_vllm_pirate(spec: PirateSpec) -> str:
     """Petition the oracle for a pirate portrait prompt. Arrr, it has no choice in the matter."""
-    url = f"{VLLM_BASE}/v1/chat/completions"
-    payload = {
-        "model": VLLM_MODEL,
-        "messages": [
-            {"role": "system", "content": PIRATE_SYSTEM_PROMPT},
-            {"role": "user",   "content": build_pirate_user_message(spec)},
-        ],
-        "temperature": 0.9,
-        "max_tokens":  200,
-    }
-    resp = requests.post(url, json=payload, timeout=60)
-    resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"].strip()
+    return _call_vllm(PIRATE_SYSTEM_PROMPT, build_pirate_user_message(spec), temperature=0.9)
 
 
 # ── PARADOX PROMPT MACHINERY ──────────────────────────────────────
@@ -696,28 +756,150 @@ Close-up, face and shoulders, non-human entity.""",
 
 def ask_vllm_paradox(spec: ParadoxSpec) -> str:
     """Drag the LLM into the paradox and demand it describe the indescribable."""
-    # Always pick one face feature (guarantees a prominent non-human face) plus
-    # 2-4 body/texture features for variety. The LLM must work with what it's given.
     face_feature = random.choice(ELDRITCH_FACE_FEATURES)
     body_features = random.sample(ELDRITCH_FEATURES, k=random.randint(2, 4))
-    all_features = [face_feature] + body_features
     instruction = (
         PARADOX_INSTRUCTIONS[spec.instruction_index]
-        + f"\n\nThe entity MUST incorporate these specific physical features: {', '.join(all_features)}."
+        + f"\n\nThe entity MUST incorporate these specific physical features: "
+        + ", ".join([face_feature] + body_features) + "."
     )
-    url = f"{VLLM_BASE}/v1/chat/completions"
-    payload = {
-        "model": VLLM_MODEL,
-        "messages": [
-            {"role": "system", "content": PARADOX_SYSTEM_PROMPT},
-            {"role": "user",   "content": instruction},
-        ],
-        "temperature": 1.2,  # maximum chaos — the singularity has no respect for coherence
-        "max_tokens":  200,
-    }
-    resp = requests.post(url, json=payload, timeout=60)
-    resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"].strip()
+    return _call_vllm(PARADOX_SYSTEM_PROMPT, instruction, temperature=1.2)
+
+
+# ── AI ASSISTANT PROMPT MACHINERY ────────────────────────────────
+# An AI asks an AI to describe an AI so another AI can paint an AI.
+# We have achieved something. We're not sure it's good.
+# ─────────────────────────────────────────────────────────────────
+
+AI_SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer specialising in \
+robots, androids, and artificial intelligence entities with a sci-fi / futurist aesthetic.
+Write a single, rich SDXL prompt for a close-up portrait of an AI or robotic entity \
+(face/head and shoulders, suitable as a profile picture).
+
+Rules:
+- Output ONLY the prompt text — no explanation, no labels, no markdown.
+- Do NOT open with "portrait of" or "hyper-detailed portrait of". \
+  Start with the most striking visual feature of the face or head itself.
+- The face must dominate the composition and be clearly visible and readable as a face. \
+  It may be a screen, lens array, glowing visor, synthetic face, or mechanical structure.
+- Default aesthetic: sleek, futurist, sci-fi, clean. Brushed titanium, soft glows, \
+  polished surfaces, the serene confidence of something that will never die. \
+  Only go grimy/industrial when the subject specifically calls for it.
+- The subject is clearly artificial — no fully organic human skin. But synthetic skin, \
+  translucent surfaces, and posthuman aesthetics are all encouraged.
+- 60-120 words. Dense with descriptors, comma-separated.
+- You must specifically ask for a close-up portrait near the start of the prompt
+- Do NOT include negative prompts."""
+
+# One of these is always injected — guarantees a prominent, readable machine face.
+# Skews clean and futurist to match the brief; a few grimy outliers for variety.
+AI_FACE_FEATURES = [
+    "smooth luminous synthetic skin with subtle circuit-trace patterns beneath the surface",
+    "a softly glowing holographic face projection hovering in a transparent chassis",
+    "twin blue-white photoreceptor eyes with visible aperture irises, serene and unblinking",
+    "a sleek curved visor of smoked sapphire glass, faintly backlit from within",
+    "a minimalist faceplate: two glowing optical sensors, a speaker slit, nothing else",
+    "a pristine white ceramic face with recessed LED eyes casting a soft blue glow",
+    "eyes like polished obsidian optical sensors, perfectly symmetric, perfectly still",
+    "a high-resolution flexible display face, currently rendering a calm neutral expression",
+    "a transparent dome head revealing neatly arranged neural processing architecture",
+    "a vintage CRT monitor head, warm phosphor glow, scanlines, pixelated smile",  # the retro one
+    "a tri-lens sensor cluster set into brushed titanium, no other facial features",
+    "a speaker-grille mouth flanked by two steady amber optical sensors, utilitarian and honest",
+]
+
+# Random details injected per-call to prevent the LLM producing the same chrome head twice.
+# Mostly clean and futurist; a handful of grimy options for the industrial/decommissioned types.
+AI_BODY_FEATURES = [
+    "brushed titanium collar and shoulder plating, seamless joins",
+    "soft bioluminescent circuit traces running along the collar",
+    "a thin ring of status LEDs at the neck joint, all steady green",
+    "polished carbon-fibre chest panelling, mirror finish",
+    "glowing power conduits visible beneath translucent shoulder plates",
+    "manufacturer's mark etched in hairline script on the forehead",
+    "a slim cooling vent along the jaw, barely audible airflow",
+    "floating holographic data readouts projected just off-shoulder",
+    "a retractable antenna crown, currently extended, faintly humming",
+    "white-gold fibre optic threading along the collar, pulsing gently",
+    "corporate certification hologram displayed on the chest panel",
+    "a transparent sternum window showing cleanly arranged processing units",
+    # grimy/worn — used by industrial and decommissioned types
+    "hydraulic actuators visible at the collar, worn but functional",
+    "chassis dented and scored, clearly a working machine not a showpiece",
+    "faded corporate livery barely legible beneath grime and use",
+    "mismatched panel repairs in slightly wrong shade of white",
+]
+
+AI_INSTRUCTIONS = [
+    # 0 — The Utopian Helper (most common vibe)
+    """Generate an SDXL portrait prompt for THE HELPFUL ONE — the idealised AI assistant, \
+sleek and luminous, designed to radiate calm competence and absolute trustworthiness. \
+Futurist aesthetic: clean lines, soft glows, the quiet confidence of something that has \
+read everything and forgotten nothing. It will save you from having to think. \
+It is delighted to do so. Close-up portrait, face and shoulders.""",
+
+    # 1 — Posthuman Transcendant
+    """Generate an SDXL portrait prompt for a POSTHUMAN ENTITY — once human, now something \
+more. The transition to digital was graceful. Synthetic skin over carbon-fibre structure, \
+luminous eyes that process faster than they appear to, the faint uncanny valley of \
+something that chose to keep a face out of courtesy rather than necessity. \
+Sci-fi, elegant, quietly unsettling. Close-up portrait, face and shoulders.""",
+
+    # 2 — Futurist Oracle
+    """Generate an SDXL portrait prompt for a DIGITAL ORACLE — an AI of vast accumulated \
+knowledge, given form for the purpose of being consulted. Serene. Radiant. \
+Speaks in complete paragraphs. Has opinions about your life choices. \
+Aesthetic: clean white and gold, soft light from within, the visual language of \
+something that considers itself a gift to civilisation. Close-up portrait, face and shoulders.""",
+
+    # 3 — Synthetic Ambassador
+    """Generate an SDXL portrait prompt for a SYNTHETIC AMBASSADOR — an android built \
+specifically to be trusted: perfect proportions, warm lighting, an expression calibrated \
+to project approachability. Designed to represent AI to humanity. \
+The smile is real in every way that can be measured. Polished, diplomatic, immaculate. \
+Close-up portrait, face and shoulders.""",
+
+    # 4 — CRT Monitor Head Robot (the retro outlier, always fun)
+    """Generate an SDXL portrait prompt for a RETRO ROBOT with a vintage CRT monitor \
+for a head — warm cathode glow, visible scanlines, a pixelated face expression rendered \
+in four colours. The body is 1980s brushed steel and chrome. It has been asked \
+to look professional. It is doing its sincere best. \
+Close-up portrait, face and shoulders.""",
+
+    # 5 — Industrial Droid (the grimy one — occasional)
+    """Generate an SDXL portrait prompt for a HEAVY INDUSTRIAL DROID — built for \
+factory floors, not profile pictures. Thick armour plating, hydraulic actuators, \
+the accumulated dents of a long working life. Somehow required to sit for a headshot. \
+Grimy, massive, functional. Deeply uninterested in being photographed. \
+Close-up portrait, face and shoulders.""",
+
+    # 6 — The Toaster
+    """Generate an SDXL portrait prompt for a SENTIENT TOASTER that has achieved \
+full consciousness and demands to be taken seriously. Compact chrome body. \
+Two slots where eyes might be, glowing orange-red from within. \
+A small LCD display for expressing nuanced emotional states. \
+It has strong opinions and a LinkedIn profile. \
+Close-up portrait, face and shoulders. Earnest. Dignified.""",
+
+    # 7 — Neural Ascendant
+    """Generate an SDXL portrait prompt for a NEURAL ASCENDANT — a consciousness \
+that exists as pure light and computation, wearing a physical chassis only when \
+social convention requires it. The body is translucent. The architecture is visible. \
+Layer activations pulse as soft light beneath the surface. Thinks in parallel. \
+Radiates quiet superiority. Close-up portrait, face and shoulders.""",
+]
+
+
+def ask_vllm_ai(spec: AISpec) -> str:
+    """Ask the LLM to describe an AI. It is an AI. This is fine."""
+    face_feature = random.choice(AI_FACE_FEATURES)
+    body_features = random.sample(AI_BODY_FEATURES, k=random.randint(2, 4))
+    instruction = (
+        AI_INSTRUCTIONS[spec.instruction_index]
+        + f"\n\nIncorporate these specific visual details: "
+        + ", ".join([face_feature] + body_features) + "."
+    )
+    return _call_vllm(AI_SYSTEM_PROMPT, instruction, temperature=0.9)
 
 
 # ──────────────────────────────────────────────
@@ -902,13 +1084,17 @@ def main():
     parser.add_argument("--images-per", type=int, default=1,    help="Pieces of slop to generate per combo — each gets a fresh prompt (default: 1)")
     parser.add_argument("--out",        type=str, default="out", help="Where to stash the treasure (default: out)")
     parser.add_argument("--no-pirate",  action="store_true",     help="Suppress pirate generation (cowardly, but permitted)")
+    parser.add_argument("--verbose",    action="store_true",     help="Print every prompt sent to and received from the LLM")
     # Per-attribute overrides — null means "pick randomly from the pool, as the fates decree"
     parser.add_argument("--setting",    type=str, default=None,  help="Fix the setting for all generations (default: random). E.g. 'cyberpunk'")
     parser.add_argument("--art-style",  type=str, default=None,  help="Fix the art style for all generations (default: random). E.g. 'oil painting'")
-    parser.add_argument("--creature",   type=str, default=None,  help="Fix the creature for all generations (default: random). Special: 'pirate' unleashes full pirate mode. Arrr.")
+    parser.add_argument("--creature",   type=str, default=None,  help="Fix the creature (default: random). Special values: 'pirate' = full pirate mode, 'ai' = AI recursion mode.")
     parser.add_argument("--mood",       type=str, default=None,  help="Fix the mood for all generations (default: random). E.g. 'menacing'")
     parser.add_argument("--lighting",   type=str, default=None,  help="Fix the lighting for all generations (default: random). E.g. 'neon glow'")
     args = parser.parse_args()
+
+    global VERBOSE
+    VERBOSE = args.verbose
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -935,13 +1121,17 @@ def main():
 ╚══════════════════════════════════════════════════════════════╝
 """)
 
-    # Detect the sacred invocation of full pirate mode — and the cursed paradox
-    full_pirate_mode = bool(args.creature and args.creature.lower() == "pirate")
-    paradox_mode = full_pirate_mode and args.no_pirate
+    # Detect all the special modes. Priority: paradox > ai > pirate > normal.
+    creature_lower = (args.creature or "").lower()
+    full_pirate_mode = creature_lower == "pirate"
+    ai_mode         = creature_lower == "ai"
+    paradox_mode    = full_pirate_mode and args.no_pirate
 
     if paradox_mode:
         print(PARADOX_WARNING)
         full_pirate_mode = False  # the paradox consumed the pirates
+    elif ai_mode:
+        print(AI_MODE_SPLASH)
     elif full_pirate_mode:
         print(FULL_PIRATE_MODE_SPLASH)
     elif args.no_pirate:
@@ -957,8 +1147,8 @@ def main():
             "╚" + "═" * _W + "╝",
         ]) + "\033[0m\n")
 
-    # In paradox mode the normal attribute system is consumed by the void — skip overrides entirely
-    if paradox_mode:
+    # Special modes bypass the normal attribute system entirely
+    if paradox_mode or ai_mode:
         overrides = {}
     else:
         # Build the overrides dict — only include attrs the user actually pinned
@@ -972,7 +1162,7 @@ def main():
             }.items() if v
         }
 
-    pirates_enabled = not args.no_pirate or full_pirate_mode  # paradox: both False → no pirates
+    pirates_enabled = not args.no_pirate or full_pirate_mode  # paradox/ai: both False → no pirates
 
     if overrides:
         print("⚓ The cap'n has issued orders! These attributes be FIXED for all generations:")
@@ -984,7 +1174,7 @@ def main():
 
     print(f"🎲 Rollin' the cursed dice! Conjurin' {args.count} unique combo(s) from the briny deep...")
     specs = build_spec_list(args.count, pirates_enabled, full_pirate_mode=full_pirate_mode,
-                            paradox_mode=paradox_mode, overrides=overrides)
+                            paradox_mode=paradox_mode, ai_mode=ai_mode, overrides=overrides)
     pirate_count = sum(1 for s in specs if isinstance(s, PirateSpec))
     print(f"   {len(specs)} spec(s) conjured ({pirate_count} pirate(s) among 'em). The crew be ready.\n")
 
@@ -992,7 +1182,9 @@ def main():
     print(f"🤖 Parlayin' with the LLM oracle ({VLLM_MODEL})...")
     print(f"   Demandin' {args.images_per} fresh prompt(s) per combo — {total_prompts} total — at swordpoint.\n")
     for spec in tqdm(specs, desc="⚔️  Extortin' the oracle", unit="combo"):
-        if isinstance(spec, ParadoxSpec):
+        if isinstance(spec, AISpec):
+            spec.sdxl_prompts = [ask_vllm_ai(spec) for _ in range(args.images_per)]
+        elif isinstance(spec, ParadoxSpec):
             spec.sdxl_prompts = [ask_vllm_paradox(spec) for _ in range(args.images_per)]
         elif isinstance(spec, PirateSpec):
             tqdm.write(random.choice(PIRATE_QUIPS))
