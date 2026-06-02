@@ -166,7 +166,7 @@ def unique_specs(count: int) -> list[AvatarSpec]:
         attempts += 1
         if attempts > count * 20:
             # The attribute pools be finite, ye greedy landlubber
-            print(f"[warn] Could only generate {len(specs)} unique combos — relaxing uniqueness constraint.")
+            print(f"☠️  Arrr! Only {len(specs)} unique combos left in these waters — droppin' the uniqueness anchor and sailin' on!")
             break
         s = random_spec()
         key = (s.setting, s.art_style, s.creature, s.mood, s.lighting)
@@ -384,7 +384,7 @@ def save_manifest(specs: list[AvatarSpec], out_dir: Path):
         d["images"] = [str(p) for p in s.images]
         manifest.append(d)
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
-    print(f"\n📋 Manifest saved → {out_dir / 'manifest.json'}")
+    print(f"\n📜 The sacred ledger of slop be writ! → {out_dir / 'manifest.json'}")
 
 
 # ──────────────────────────────────────────────
@@ -412,23 +412,64 @@ def main():
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"🎲 Generating {args.count} random attribute combos...")
-    specs = unique_specs(args.count)
+    print("""
+  .-------------.
+  |    .---.    |
+  |   ( x x )   |
+  |    \\ - /    |   <- Jolly Roger, pride of the S.S. Sloptide
+  |    /   \\    |      She flies for slop, not glory.
+  |   / | | \\   |
+  '-------------'---.
+                    |
+                    |
+                    |
+""")
 
-    print(f"🤖 Asking vLLM ({VLLM_MODEL}) to write {args.images_per} SDXL prompt(s) per combo...\n")
-    for spec in tqdm(specs, desc="LLM prompts"):
+    print("""
+╔══════════════════════════════════════════════════════════════╗
+║  ☠️   AVATAR SLOP GENERATOR 3000  —  THE PIRATE EDITION  ☠️  ║
+║                                                              ║
+║   Three AIs. Zero taste. Infinite cyberpunk vampire orcs.    ║
+║   All hands on deck! ⚓ The S.S. Sloptide sets sail!         ║
+╚══════════════════════════════════════════════════════════════╝
+""")
+
+    print(f"🎲 Rollin' the cursed dice! Conjurin' {args.count} unique combo(s) from the briny deep...")
+    specs = unique_specs(args.count)
+    print(f"   {len(specs)} spec(s) plundered. The crew be ready.\n")
+
+    total_prompts = len(specs) * args.images_per
+    print(f"🤖 Parlayin' with the LLM oracle ({VLLM_MODEL})...")
+    print(f"   Demandin' {args.images_per} fresh prompt(s) per combo — {total_prompts} total — at swordpoint.\n")
+    for spec in tqdm(specs, desc="⚔️  Extortin' the oracle", unit="combo"):
         # Each image gets its own fresh prompt — same attributes, different slop every time
         spec.sdxl_prompts = [ask_vllm(spec) for _ in range(args.images_per)]
 
-    print(f"\n🖼  Generating {args.images_per} image(s) per combo via ComfyUI...\n")
-    for spec in tqdm(specs, desc="ComfyUI"):
+    total_images = len(specs) * args.images_per
+    print(f"\n🎨 Orderin' ComfyUI to paint {total_images} image(s) of glorious slop...")
+    print(f"   Patience, sailor. The kraken renders at its own pace. Do not rush the slop.\n")
+    for spec in tqdm(specs, desc="🖼️  Sloppin' the canvas", unit="combo"):
         spec.images = generate_images(spec, out_dir)
 
     save_manifest(specs, out_dir)
 
     total = sum(len(s.images) for s in specs)
-    print(f"\n✅ Done! {total} images saved to {out_dir}/")
-    print("Arrr, the slop be plentiful. May it serve ye well, ye magnificent fool. 🏴‍☠️")
+    print(f"\n⚓ LAND HO! {total} piece(s) of glorious slop stashed in {out_dir}/")
+    print("Arrr, the treasure chest be full. The kraken be fed. The slop be plentiful.")
+    print("May these cursed images serve ye well, ye magnificent fool. 🏴‍☠️")
+    print("""
+                         |    |    |
+                        )_)  )_)  )_)
+                       )___))___))___)\\
+                      )____)____)_____)\\
+        _______________|____|____|____|_______
+       /       S . S .   S L O P T I D E    \\
+      /        A V A T A R   G E N  3 0 0 0  \\
+     |_________________________________________\\
+      \\________________________________________/
+  ~~~~^~~~~^~~~~^~~~~^~~~~^~~~~^~~~~^~~~~^~~~~^~~
+  ~~^~~~~^~~~~^~~~~^~~~~^~~~~^~~~~^~~~~^~~~~^~~~~
+""")
 
 
 if __name__ == "__main__":
