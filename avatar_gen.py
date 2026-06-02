@@ -748,16 +748,17 @@ def main():
     if full_pirate_mode:
         print(FULL_PIRATE_MODE_SPLASH)
     elif args.no_pirate:
-        print(
-            "\n\033[91m"  # RED — this is a serious offence
-            "╔══════════════════════════════════════════════════════════════╗\n"
-            "║   AVAST YE CRAVEN BILGE-RAT!!! --no-pirate?! --NO-PIRATE?! ║\n"
-            "║   Have ye NO honour?! No SOUL?! Ye have SHAMED this vessel! ║\n"
-            "║   The crew is WEEPING. The Jolly Roger flies at HALF MAST.  ║\n"
-            "║   May yer rum be forever watered and yer parrot be silent.  ║\n"
-            "╚══════════════════════════════════════════════════════════════╝"
-            "\033[0m\n"
-        )
+        _W = 62
+        _row = lambda t="": "║" + t.ljust(_W) + "║"
+        print("\033[91m" + "\n".join([
+            "",
+            "╔" + "═" * _W + "╗",
+            _row("   AVAST YE CRAVEN BILGE-RAT!!! --no-pirate?! --NO-PIRATE?!"),
+            _row("   Have ye NO honour?! No SOUL?! Ye have SHAMED this vessel!"),
+            _row("   The crew is WEEPING. The Jolly Roger flies at HALF MAST."),
+            _row("   May yer rum be forever watered and yer parrot be silent."),
+            "╚" + "═" * _W + "╝",
+        ]) + "\033[0m\n")
 
     # Build the overrides dict — only include attrs the user actually pinned
     overrides = {
@@ -772,6 +773,14 @@ def main():
     }
 
     pirates_enabled = not args.no_pirate or full_pirate_mode  # full pirate mode overrules cowardice
+
+    if overrides:
+        print("⚓ The cap'n has issued orders! These attributes be FIXED for all generations:")
+        label = {"setting": "Setting", "art_style": "Art Style", "creature": "Creature",
+                 "mood": "Mood", "lighting": "Lighting"}
+        for k, v in overrides.items():
+            print(f"   ⚔️  {label[k]}: {v!r}")
+        print()
 
     print(f"🎲 Rollin' the cursed dice! Conjurin' {args.count} unique combo(s) from the briny deep...")
     specs = build_spec_list(args.count, pirates_enabled, full_pirate_mode=full_pirate_mode, overrides=overrides)
