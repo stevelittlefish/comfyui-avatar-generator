@@ -301,6 +301,40 @@ def _build_pirate_splash() -> str:
 FULL_PIRATE_MODE_SPLASH = _build_pirate_splash()
 
 
+# The universe-breaking event: --creature pirate AND --no-pirate simultaneously.
+# What happens? Nobody knows. The AI certainly doesn't.
+def _build_paradox_warning() -> str:
+    W = 62
+    top = "╔" + "═" * W + "╗"
+    sep = "╠" + "═" * W + "╣"
+    bot = "╚" + "═" * W + "╝"
+    def row(text=""): return "║" + text.ljust(W) + "║"
+    def centre(text): return "║" + text.center(W) + "║"
+    return "\033[95m\n" + "\n".join([
+        top,
+        row(),
+        centre("~ ~ ~  P A R A D O X   D E T E C T E D  ~ ~ ~"),
+        row(),
+        sep,
+        row(),
+        row("   --creature pirate AND --no-pirate. AT THE SAME TIME."),
+        row("   YE HAVE BROKEN THE UNIVERSE. The crew does not exist."),
+        row("   The crew MUST exist. Both are true. Neither is true."),
+        row(),
+        row("   The parrot is screaming. The Jolly Roger cannot decide"),
+        row("   whether to fly. Schrodinger's pirate. ALL of them."),
+        row("   The LLM has entered an undefined state. It weeps."),
+        row(),
+        row("   As penance, all generations shall henceforth be:"),
+        row("   PARADOXICAL POST-APOCALYPTIC ELDRITCH SINGULARITIES."),
+        row("   Ye brought this upon yerself. Arrr. Or did ye? UNCLEAR."),
+        row(),
+        bot,
+    ]) + "\n\033[0m"
+
+PARADOX_WARNING = _build_paradox_warning()
+
+
 # ──────────────────────────────────────────────
 # DATA MODEL
 # ──────────────────────────────────────────────
@@ -341,6 +375,18 @@ class PirateSpec:
             f"pirate_{self.role}_{self.era}"
             .lower().replace(" ", "_").replace("/", "-")[:60]
         )
+
+
+@dataclass
+class ParadoxSpec:
+    # Born of contradiction. Should not exist. Does anyway. Has a slug.
+    instruction_index: int  # which of the 5 eldritch horrors we're summoning
+    sdxl_prompts: list = field(default_factory=list)
+    images:       list = field(default_factory=list)
+
+    @property
+    def slug(self) -> str:
+        return f"paradox_singularity_{self.instruction_index}"
 
 
 # ──────────────────────────────────────────────
@@ -412,15 +458,25 @@ def unique_pirate_specs(count: int, overrides: dict = None) -> list[PirateSpec]:
     return specs
 
 
-def build_spec_list(count: int, pirates_enabled: bool, full_pirate_mode: bool = False, overrides: dict = None) -> list:
+def random_paradox_spec() -> ParadoxSpec:
+    # Five eldritch horrors to choose from. All equally inadvisable.
+    return ParadoxSpec(instruction_index=random.randint(0, 4))
+
+
+def build_spec_list(count: int, pirates_enabled: bool, full_pirate_mode: bool = False,
+                    paradox_mode: bool = False, overrides: dict = None) -> list:
     """Build the final spec list, injecting pirates at their rightful positions.
 
     Rules of engagement:
+    - paradox_mode: ALL specs are eldritch singularities. The user did this to themselves.
     - full_pirate_mode: ALL specs are pirates. Every last one. No exceptions.
     - count == 1: no pirates (not enough crew to hide 'em among)
     - --no-pirate: cowardice rewarded, pirates suppressed
     - otherwise: spec[1] is ALWAYS a pirate; each later spec has a 1-in-8 chance
     """
+    if paradox_mode:
+        # The paradox has consumed all normal generation. Only eldritch horrors remain.
+        return [random_paradox_spec() for _ in range(count)]
     if full_pirate_mode:
         # The user asked for pirates. They get ONLY pirates. Glorious.
         return list(unique_pirate_specs(count, overrides))
@@ -520,6 +576,79 @@ def ask_vllm_pirate(spec: PirateSpec) -> str:
             {"role": "user",   "content": build_pirate_user_message(spec)},
         ],
         "temperature": 0.9,
+        "max_tokens":  200,
+    }
+    resp = requests.post(url, json=payload, timeout=60)
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"].strip()
+
+
+# ── PARADOX PROMPT MACHINERY ──────────────────────────────────────
+# Five pre-written instructions for summoning eldritch post-apocalyptic
+# nightmares. The LLM did not ask for this job. Neither did we.
+# ──────────────────────────────────────────────────────────────────
+
+PARADOX_SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer specialising in \
+dark, eldritch, and post-apocalyptic horror portraiture.
+Write a single, rich SDXL prompt for a portrait/avatar image (face and shoulders only, close-up).
+
+Rules:
+- Output ONLY the prompt text — no explanation, no labels, no markdown.
+- Start with the most important visual horror descriptors.
+- Lean into cosmic dread, dark atmosphere, and post-apocalyptic ruin.
+- 60-120 words. Dense with descriptors, comma-separated.
+- Do NOT include negative prompts."""
+
+PARADOX_INSTRUCTIONS = [
+    # 1 — The Singularity Itself
+    """Generate an SDXL portrait prompt for an ELDRITCH SINGULARITY — a point where \
+reality folded inward and gained terrible consciousness. It gazes outward from behind \
+the event horizon of its own existence. Post-apocalyptic wasteland sky, impossible \
+geometry, the face of something that devoured physics and found it insufficient. \
+Close-up portrait, face and shoulders.""",
+
+    # 2 — The Thing That Came Through
+    """Generate an SDXL portrait prompt for a VOID ENTITY that crawled through a rent \
+in reality left open by the collapse of civilisation. The apocalypse was not the end — \
+it was the door. This came through it. Nuclear ash sky, dead world, unknowable dark \
+intelligence behind its gaze, the patient certainty of something that has already won. \
+Close-up portrait, face and shoulders.""",
+
+    # 3 — The Paradox Made Flesh
+    """Generate an SDXL portrait prompt for PARADOX INCARNATE — a being that exists \
+solely because two mutually exclusive truths were demanded simultaneously. It is the \
+physical form of logical impossibility made manifest. Dark post-apocalyptic aesthetic, \
+fractured reality, the face of something that cannot exist but does, reality warping \
+around its edges. Close-up portrait, face and shoulders.""",
+
+    # 4 — The Last Witness
+    """Generate an SDXL portrait prompt for THE LAST WITNESS — an ancient eldritch \
+entity that watched civilisation after civilisation rise, fall, and rot, and now sits \
+in the ruins of the final one. Patient. Terrible. Utterly unimpressed. \
+Post-apocalyptic wasteland, dying red sky, ruined towers in the distance, the face \
+of something that has seen the end of all things and is mildly bored by it. \
+Close-up portrait, face and shoulders.""",
+
+    # 5 — The Merged
+    """Generate an SDXL portrait prompt for THE MERGED — a human who reached into \
+eldritch darkness at the exact moment of the apocalypse and fused with it. \
+Part flesh, part void, part cosmic horror, entirely beyond classification. \
+Something vast and inhuman staring out through eyes that used to be human. \
+Post-apocalyptic horror, dim dying light, the smell of entropy made visual. \
+Close-up portrait, face and shoulders.""",
+]
+
+
+def ask_vllm_paradox(spec: ParadoxSpec) -> str:
+    """Drag the LLM into the paradox and demand it describe the indescribable."""
+    url = f"{VLLM_BASE}/v1/chat/completions"
+    payload = {
+        "model": VLLM_MODEL,
+        "messages": [
+            {"role": "system", "content": PARADOX_SYSTEM_PROMPT},
+            {"role": "user",   "content": PARADOX_INSTRUCTIONS[spec.instruction_index]},
+        ],
+        "temperature": 0.95,  # extra chaos — the singularity demands it
         "max_tokens":  200,
     }
     resp = requests.post(url, json=payload, timeout=60)
@@ -742,10 +871,14 @@ def main():
 ╚══════════════════════════════════════════════════════════════╝
 """)
 
-    # Detect the sacred invocation of full pirate mode
+    # Detect the sacred invocation of full pirate mode — and the cursed paradox
     full_pirate_mode = bool(args.creature and args.creature.lower() == "pirate")
+    paradox_mode = full_pirate_mode and args.no_pirate
 
-    if full_pirate_mode:
+    if paradox_mode:
+        print(PARADOX_WARNING)
+        full_pirate_mode = False  # the paradox consumed the pirates
+    elif full_pirate_mode:
         print(FULL_PIRATE_MODE_SPLASH)
     elif args.no_pirate:
         _W = 62
@@ -760,19 +893,22 @@ def main():
             "╚" + "═" * _W + "╝",
         ]) + "\033[0m\n")
 
-    # Build the overrides dict — only include attrs the user actually pinned
-    overrides = {
-        k: v for k, v in {
-            "setting":   args.setting,
-            "art_style": args.art_style,
-            # In full pirate mode, --creature pirate is the trigger, not a creature name
-            "creature":  None if full_pirate_mode else args.creature,
-            "mood":      args.mood,
-            "lighting":  args.lighting,
-        }.items() if v
-    }
+    # In paradox mode the normal attribute system is consumed by the void — skip overrides entirely
+    if paradox_mode:
+        overrides = {}
+    else:
+        # Build the overrides dict — only include attrs the user actually pinned
+        overrides = {
+            k: v for k, v in {
+                "setting":   args.setting,
+                "art_style": args.art_style,
+                "creature":  None if full_pirate_mode else args.creature,
+                "mood":      args.mood,
+                "lighting":  args.lighting,
+            }.items() if v
+        }
 
-    pirates_enabled = not args.no_pirate or full_pirate_mode  # full pirate mode overrules cowardice
+    pirates_enabled = not args.no_pirate or full_pirate_mode  # paradox: both False → no pirates
 
     if overrides:
         print("⚓ The cap'n has issued orders! These attributes be FIXED for all generations:")
@@ -783,7 +919,8 @@ def main():
         print()
 
     print(f"🎲 Rollin' the cursed dice! Conjurin' {args.count} unique combo(s) from the briny deep...")
-    specs = build_spec_list(args.count, pirates_enabled, full_pirate_mode=full_pirate_mode, overrides=overrides)
+    specs = build_spec_list(args.count, pirates_enabled, full_pirate_mode=full_pirate_mode,
+                            paradox_mode=paradox_mode, overrides=overrides)
     pirate_count = sum(1 for s in specs if isinstance(s, PirateSpec))
     print(f"   {len(specs)} spec(s) conjured ({pirate_count} pirate(s) among 'em). The crew be ready.\n")
 
@@ -791,7 +928,9 @@ def main():
     print(f"🤖 Parlayin' with the LLM oracle ({VLLM_MODEL})...")
     print(f"   Demandin' {args.images_per} fresh prompt(s) per combo — {total_prompts} total — at swordpoint.\n")
     for spec in tqdm(specs, desc="⚔️  Extortin' the oracle", unit="combo"):
-        if isinstance(spec, PirateSpec):
+        if isinstance(spec, ParadoxSpec):
+            spec.sdxl_prompts = [ask_vllm_paradox(spec) for _ in range(args.images_per)]
+        elif isinstance(spec, PirateSpec):
             tqdm.write(random.choice(PIRATE_QUIPS))
             spec.sdxl_prompts = [ask_vllm_pirate(spec) for _ in range(args.images_per)]
         else:
