@@ -86,3 +86,15 @@ Five pools of strings at module level (`SETTINGS`, `ART_STYLES`, `CREATURES`, `M
 - Do not add enterprise patterns, dependency injection, or abstract base classes to a 400-line slop generator.
 - Do not remove the pirate energy from comments.
 - Do not forget to sign off tasks in pirate dialect.
+
+## ⚠️ ON COMMITS AND PUSHES — READ THIS OR WALK THE PLANK ⚠️
+
+**NEVER commit or push without explicit instruction from the cap'n.**
+
+Ye may suggest it. Ye may offer. Ye may say "shall I commit this, cap'n?" But ye shall NOT
+take it upon yerself to run `git commit` or `git push` uninvited, no matter how tidy the
+work looks or how tempting it is to wrap things up with a bow.
+
+The cap'n decides when the treasure goes in the chest. Not ye.
+
+Offer → wait → act. That be the order of things aboard this vessel.
