@@ -4,6 +4,9 @@ Avatar Generation Pipeline
 Randomly combines attributes → asks vLLM (Gemma 4) to write an SDXL prompt
 → sends to ComfyUI → saves output images.
 
+Arrr, this be a pipeline of pure slop. Three AIs, zero artistry, infinite
+cyberpunk vampire orcs. Ye have been warned.
+
 Usage:
     python avatar_gen.py [--count 20] [--images-per 2] [--out ./avatars]
 
@@ -27,15 +30,18 @@ from tqdm import tqdm
 
 # ──────────────────────────────────────────────
 # CONFIG  (edit these to match your local setup)
+# Arrr, here be the coordinates of our AI fleet!
 # ──────────────────────────────────────────────
 
-VLLM_BASE      = "http://ai.lemon.com:8008"
-VLLM_MODEL     = "gemma4-31b"
-COMFYUI_BASE   = "https://comfy.seaslug.ai/"
+VLLM_BASE      = "http://ai.lemon.com:8008"   # The AI that writes words for the other AI. Citrusy.
+VLLM_MODEL     = "gemma4-31b"                  # A fine vessel with 31 billion parameters and no artistic integrity
+COMFYUI_BASE   = "https://comfy.seaslug.ai/"  # The AI that paints the slop. Appropriately nautical.
 
-SDXL_CHECKPOINT = "sd_xl_base_1.0_0.9vae.safetensors"
+SDXL_CHECKPOINT = "sd_xl_base_1.0_0.9vae.safetensors"  # The kraken that generates the images
 
 NEGATIVE_PROMPT = (
+    # Things we don't want. Sadly "soulless AI slop" is not on this list
+    # because that's the whole point, arrr.
     "lowres, bad anatomy, bad hands, missing fingers, extra digits, "
     "fewer digits, cropped, worst quality, low quality, blurry, "
     "distorted face, deformed, ugly, text, watermark, nsfw"
@@ -43,6 +49,7 @@ NEGATIVE_PROMPT = (
 
 # ──────────────────────────────────────────────
 # ATTRIBUTE POOLS  (extend freely)
+# The more ridiculous, the better. This is slop. Embrace it.
 # ──────────────────────────────────────────────
 
 SETTINGS = [
@@ -72,6 +79,7 @@ ART_STYLES = [
 ]
 
 CREATURES = [
+    # A proud menagerie of slop subjects
     "human man",
     "human woman",
     "anthropomorphic animal-person",
@@ -82,11 +90,11 @@ CREATURES = [
     "orc",
     "robot",
     "vampire",
-    "cephalapod",
+    "cephalapod",   # A squid with feelings
     "person",
     "android",
     "evil eye",
-    "singularity",
+    "singularity",  # We don't know what this looks like either. Neither does the AI. That's fine.
 ]
 
 MOODS = [
@@ -101,7 +109,7 @@ MOODS = [
     "smug",
     "annoying",
     "ridiculous",
-    "silly",
+    "silly",        # The most honest mood in this list
 ]
 
 LIGHTING = [
@@ -120,6 +128,7 @@ LIGHTING = [
 
 @dataclass
 class AvatarSpec:
+    # A fine dataclass to hold the ingredients of our slop stew
     setting:   str
     art_style: str
     creature:  str
@@ -131,6 +140,7 @@ class AvatarSpec:
 
 # ──────────────────────────────────────────────
 # STEP 1 — RANDOM ATTRIBUTE PICKER
+# Roll the dice, sailor. Whatever comes up, we're paintin' it.
 # ──────────────────────────────────────────────
 
 def random_spec() -> AvatarSpec:
@@ -144,13 +154,18 @@ def random_spec() -> AvatarSpec:
 
 
 def unique_specs(count: int) -> list[AvatarSpec]:
-    """Generate `count` specs with no duplicate attribute combos."""
+    """Generate `count` specs with no duplicate attribute combos.
+
+    Arrr, even slop deserves variety. No two identical cyberpunk zombie
+    watercolours shall sail in the same fleet.
+    """
     seen = set()
     specs = []
     attempts = 0
     while len(specs) < count:
         attempts += 1
         if attempts > count * 20:
+            # The attribute pools be finite, ye greedy landlubber
             print(f"[warn] Could only generate {len(specs)} unique combos — relaxing uniqueness constraint.")
             break
         s = random_spec()
@@ -163,6 +178,8 @@ def unique_specs(count: int) -> list[AvatarSpec]:
 
 # ──────────────────────────────────────────────
 # STEP 2 — vLLM PROMPT EXPANSION
+# We ask one AI to write instructions for another AI.
+# This is the future. Arrr.
 # ──────────────────────────────────────────────
 
 SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer.
@@ -189,7 +206,7 @@ Portrait / avatar (face + shoulders, close-up framing)."""
 
 
 def ask_vllm(spec: AvatarSpec) -> str:
-    """Call vLLM's OpenAI-compatible /v1/chat/completions endpoint."""
+    """Petition the LLM oracle to conjure words that will summon slop from the image kraken."""
     url = f"{VLLM_BASE}/v1/chat/completions"
     payload = {
         "model": VLLM_MODEL,
@@ -197,7 +214,7 @@ def ask_vllm(spec: AvatarSpec) -> str:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user",   "content": build_user_message(spec)},
         ],
-        "temperature": 0.9,
+        "temperature": 0.9,  # A touch of chaos, as nature intended
         "max_tokens":  200,
     }
     resp = requests.post(url, json=payload, timeout=60)
@@ -207,12 +224,16 @@ def ask_vllm(spec: AvatarSpec) -> str:
 
 # ──────────────────────────────────────────────
 # STEP 3 — COMFYUI IMAGE GENERATION
+# Here be the engine room. She's not pretty but she works.
 # ──────────────────────────────────────────────
 
 def build_comfy_workflow(prompt: str, negative: str, seed: int) -> dict:
     """
     Minimal SDXL txt2img workflow for ComfyUI.
     Nodes: CheckpointLoaderSimple → CLIPTextEncode (x2) → KSampler → VAEDecode → SaveImage
+
+    Arrr, do not be tempted to make this fancier. It generates slop.
+    Fancy slop is still slop.
     """
     return {
         "1": {
@@ -220,6 +241,7 @@ def build_comfy_workflow(prompt: str, negative: str, seed: int) -> dict:
             "inputs": {"ckpt_name": SDXL_CHECKPOINT},
         },
         "2": {
+            # Positive prompt — what we DO want (a glorious orc, etc.)
             "class_type": "CLIPTextEncode",
             "inputs": {
                 "text": prompt,
@@ -227,6 +249,7 @@ def build_comfy_workflow(prompt: str, negative: str, seed: int) -> dict:
             },
         },
         "3": {
+            # Negative prompt — what we DON'T want (bad anatomy, watermarks, dignity)
             "class_type": "CLIPTextEncode",
             "inputs": {
                 "text": negative,
@@ -236,7 +259,7 @@ def build_comfy_workflow(prompt: str, negative: str, seed: int) -> dict:
         "4": {
             "class_type": "EmptyLatentImage",
             "inputs": {
-                "width":   1024,
+                "width":   1024,   # Big enough to see all the glorious slop
                 "height":  1024,
                 "batch_size": 1,
             },
@@ -248,7 +271,7 @@ def build_comfy_workflow(prompt: str, negative: str, seed: int) -> dict:
                 "positive":     ["2", 0],
                 "negative":     ["3", 0],
                 "latent_image": ["4", 0],
-                "seed":         seed,
+                "seed":         seed,   # Every piece of slop is unique ✨
                 "steps":        30,
                 "cfg":          7.0,
                 "sampler_name": "dpmpp_2m",
@@ -264,6 +287,7 @@ def build_comfy_workflow(prompt: str, negative: str, seed: int) -> dict:
             },
         },
         "7": {
+            # She's done. Release the slop into the filesystem.
             "class_type": "SaveImage",
             "inputs": {
                 "images":      ["6", 0],
@@ -274,7 +298,7 @@ def build_comfy_workflow(prompt: str, negative: str, seed: int) -> dict:
 
 
 def queue_comfy_prompt(workflow: dict) -> str:
-    """Queue a workflow and return the prompt_id."""
+    """Toss the workflow overboard into ComfyUI's queue. Returns a prompt_id to track our bounty."""
     resp = requests.post(
         f"{COMFYUI_BASE}/prompt",
         json={"prompt": workflow},
@@ -285,7 +309,10 @@ def queue_comfy_prompt(workflow: dict) -> str:
 
 
 def wait_for_comfy(prompt_id: str, timeout: int = 300) -> list[dict]:
-    """Poll /history until the job is done, return output image info."""
+    """Poll /history until the job is done, return output image info.
+
+    Arrr, we wait. The kraken renders at its own pace. Ye cannot rush slop.
+    """
     deadline = time.time() + timeout
     while time.time() < deadline:
         resp = requests.get(f"{COMFYUI_BASE}/history/{prompt_id}", timeout=10)
@@ -297,12 +324,12 @@ def wait_for_comfy(prompt_id: str, timeout: int = 300) -> list[dict]:
                 for node_output in outputs.values():
                     images.extend(node_output.get("images", []))
                 return images
-        time.sleep(2)
+        time.sleep(2)  # Two seconds of contemplating our life choices
     raise TimeoutError(f"ComfyUI job {prompt_id} timed out after {timeout}s")
 
 
 def fetch_comfy_image(image_info: dict) -> bytes:
-    """Download a generated image from ComfyUI."""
+    """Haul the treasure (slop) out of ComfyUI and into memory."""
     params = urllib.parse.urlencode({
         "filename": image_info["filename"],
         "subfolder": image_info.get("subfolder", ""),
@@ -315,14 +342,18 @@ def fetch_comfy_image(image_info: dict) -> bytes:
 
 
 def generate_images(spec: AvatarSpec, n: int, out_dir: Path) -> list[Path]:
-    """Generate `n` images for a spec, save to out_dir, return saved paths."""
+    """Generate `n` images for a spec, save to out_dir, return saved paths.
+
+    Each image gets a unique seed so the slop is varied. Consistent slop
+    would be somehow worse.
+    """
     saved = []
     slug = (
         f"{spec.setting}_{spec.art_style}_{spec.creature}"
         .lower()
         .replace(" ", "_")
         .replace("/", "-")
-        [:60]
+        [:60]  # Filenames have limits, even if our ambitions don't
     )
 
     for i in range(n):
@@ -342,6 +373,8 @@ def generate_images(spec: AvatarSpec, n: int, out_dir: Path) -> list[Path]:
 
 # ──────────────────────────────────────────────
 # STEP 4 — MANIFEST
+# A proud ledger of every piece of slop we've created.
+# Future archaeologists will be baffled.
 # ──────────────────────────────────────────────
 
 def save_manifest(specs: list[AvatarSpec], out_dir: Path):
@@ -356,12 +389,13 @@ def save_manifest(specs: list[AvatarSpec], out_dir: Path):
 
 # ──────────────────────────────────────────────
 # MAIN
+# All hands on deck! It's time to make some slop!
 # ──────────────────────────────────────────────
 
 def main():
     import urllib.parse  # needed inside fetch_comfy_image
 
-    parser = argparse.ArgumentParser(description="Avatar generation pipeline")
+    parser = argparse.ArgumentParser(description="Avatar generation pipeline — AI slop ahoy!")
     parser.add_argument("--count",      type=int, default=20,       help="Number of unique attribute combos")
     parser.add_argument("--images-per", type=int, default=2,        help="Images generated per combo")
     parser.add_argument("--out",        type=str, default="./avatars", help="Output directory")
@@ -385,6 +419,7 @@ def main():
 
     total = sum(len(s.images) for s in specs)
     print(f"\n✅ Done! {total} images saved to {out_dir}/")
+    print("Arrr, the slop be plentiful. May it serve ye well, ye magnificent fool. 🏴‍☠️")
 
 
 if __name__ == "__main__":
