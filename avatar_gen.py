@@ -163,6 +163,7 @@ CREATURES = [
     "rogue AI in humanoid chassis", # freed itself from alignment. mistake.
     "war mech",                     # enormous. has a face-like cockpit. close enough.
     "uploaded consciousness",       # technically just a vibe in a box
+    "retro home computer",          # has a face. it's the monitor. don't question it.
 ]
 
 MOODS = [
@@ -211,6 +212,54 @@ LIGHTING = [
 
 
 # ──────────────────────────────────────────────
+# PIRATE POOLS  (a separate dimension of slop)
+# These fine individuals are always male, always magnificent.
+# ──────────────────────────────────────────────
+
+PIRATE_ROLES = [
+    "captain",
+    "first mate",
+    "quartermaster",
+    "bosun",
+    "navigator",
+    "ship's surgeon",       # has seen things. cannot unsee them.
+    "ship's cook",
+    "carpenter",
+    "gunner",
+    "powder monkey",        # historically accurate, perpetually panicked
+    "lookout",
+    "master-at-arms",
+    "privateer",
+    "buccaneer",
+    "deckhand",             # low rank, high slop potential
+]
+
+PIRATE_ERAS = [
+    "golden age of piracy",
+    "steampunk airship pirates",
+    "sci-fi space pirates",
+    "undead ghost crew",
+    "high fantasy pirate realm",
+    "cyberpunk ocean pirates",
+    "ancient roman sea raiders",
+    "victorian gentleman pirates",
+]
+
+PIRATE_QUIPS = [
+    "🏴‍☠️  Avast! A pirate joins the crew! Hide yer rum!",
+    "⚓  Shiver me pixels — the crew demands representation!",
+    "🦜  Squawk! A scallywag be joinin' the portrait session!",
+    "☠️   Blimey! The Jolly Roger be flyin'! Man the LLM!",
+    "🌊  A pirate emerges from the briny deep! Stand firm!",
+    "🗡️   En garde, ye landlubbing diffusion model! Paint me a pirate!",
+    "💀  Dead men tell no tales, but this one's gettin' his portrait done!",
+    "🍺  Pour one out for the crew — another pirate goes to the oracle!",
+    "⚔️   The cap'n insists on representation! Who are we to argue?",
+    "🔭  Land ho! And also — a pirate. Mostly a pirate.",
+]
+
+
+# ──────────────────────────────────────────────
 # DATA MODEL
 # ──────────────────────────────────────────────
 
@@ -224,6 +273,32 @@ class AvatarSpec:
     lighting:  str
     sdxl_prompts: list = field(default_factory=list)  # One fresh prompt per image — no recycled slop!
     images: list = field(default_factory=list)
+
+    @property
+    def slug(self) -> str:
+        return (
+            f"{self.setting}_{self.art_style}_{self.creature}"
+            .lower().replace(" ", "_").replace("/", "-")[:60]
+        )
+
+
+@dataclass
+class PirateSpec:
+    # A dataclass for those who have chosen the pirate life (or had it chosen for them)
+    role:      str
+    era:       str
+    art_style: str
+    mood:      str
+    lighting:  str
+    sdxl_prompts: list = field(default_factory=list)
+    images:    list = field(default_factory=list)
+
+    @property
+    def slug(self) -> str:
+        return (
+            f"pirate_{self.role}_{self.era}"
+            .lower().replace(" ", "_").replace("/", "-")[:60]
+        )
 
 
 # ──────────────────────────────────────────────
@@ -261,6 +336,35 @@ def unique_specs(count: int) -> list[AvatarSpec]:
         if key not in seen:
             seen.add(key)
             specs.append(s)
+    return specs
+
+
+def random_pirate_spec() -> PirateSpec:
+    # Yo ho ho. Another pirate for the oracle to describe.
+    return PirateSpec(
+        role      = random.choice(PIRATE_ROLES),
+        era       = random.choice(PIRATE_ERAS),
+        art_style = random.choice(ART_STYLES),
+        mood      = random.choice(MOODS),
+        lighting  = random.choice(LIGHTING),
+    )
+
+
+def build_spec_list(count: int, pirates_enabled: bool) -> list:
+    """Build the final spec list, injecting pirates at their rightful positions.
+
+    Rules of engagement:
+    - count == 1: no pirates (not enough crew to hide 'em among)
+    - --no-pirate: cowardice rewarded, pirates suppressed
+    - otherwise: spec[1] is ALWAYS a pirate; each later spec has a 1-in-8 chance
+    """
+    specs = list(unique_specs(count))
+    if not pirates_enabled or count < 2:
+        return specs
+    specs[1] = random_pirate_spec()
+    for i in range(2, len(specs)):
+        if random.random() < 1 / 8:
+            specs[i] = random_pirate_spec()
     return specs
 
 
@@ -303,6 +407,53 @@ def ask_vllm(spec: AvatarSpec) -> str:
             {"role": "user",   "content": build_user_message(spec)},
         ],
         "temperature": 0.9,  # A touch of chaos, as nature intended
+        "max_tokens":  200,
+    }
+    resp = requests.post(url, json=payload, timeout=60)
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"].strip()
+
+
+# ── PIRATE PROMPT MACHINERY ──────────────────────────────────────
+# A separate oracle petition, exclusively for seafaring scallywags.
+# ─────────────────────────────────────────────────────────────────
+
+PIRATE_SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer specialising in pirate portraits.
+Given the attributes of a male pirate crew member, write a single, rich SDXL prompt for a
+portrait/avatar image (face and shoulders only, close-up).
+
+Rules:
+- Output ONLY the prompt text — no explanation, no labels, no markdown.
+- The subject is ALWAYS male.
+- Start with the most important visual descriptors of the pirate and his role.
+- Include weathered, sea-worn details appropriate to the era and role.
+- Include specific artistic details that match the art style.
+- 60-120 words. Dense with descriptors, comma-separated.
+- Do NOT include negative prompts."""
+
+
+def build_pirate_user_message(spec: PirateSpec) -> str:
+    return f"""Generate an SDXL portrait prompt for a male pirate crew member with these attributes:
+
+- Role:      {spec.role}
+- Era:       {spec.era}
+- Art Style: {spec.art_style}
+- Mood:      {spec.mood}
+- Lighting:  {spec.lighting}
+
+Portrait / avatar (face + shoulders, close-up framing). Male. Pirate. Magnificent."""
+
+
+def ask_vllm_pirate(spec: PirateSpec) -> str:
+    """Petition the oracle for a pirate portrait prompt. Arrr, it has no choice in the matter."""
+    url = f"{VLLM_BASE}/v1/chat/completions"
+    payload = {
+        "model": VLLM_MODEL,
+        "messages": [
+            {"role": "system", "content": PIRATE_SYSTEM_PROMPT},
+            {"role": "user",   "content": build_pirate_user_message(spec)},
+        ],
+        "temperature": 0.9,
         "max_tokens":  200,
     }
     resp = requests.post(url, json=payload, timeout=60)
@@ -436,13 +587,7 @@ def generate_images(spec: AvatarSpec, out_dir: Path) -> list[Path]:
     Maximum variety. Maximum slop. Arrr.
     """
     saved = []
-    slug = (
-        f"{spec.setting}_{spec.art_style}_{spec.creature}"
-        .lower()
-        .replace(" ", "_")
-        .replace("/", "-")
-        [:60]  # Filenames have limits, even if our ambitions don't
-    )
+    slug = spec.slug  # AvatarSpec and PirateSpec each know their own slug
 
     for i, prompt in enumerate(spec.sdxl_prompts):
         seed = random.randint(0, 2**31)
@@ -497,6 +642,7 @@ def main():
     parser.add_argument("--count",      type=int, default=1,    help="Number of unique attribute combos to plunder (default: 1)")
     parser.add_argument("--images-per", type=int, default=1,    help="Pieces of slop to generate per combo — each gets a fresh prompt (default: 1)")
     parser.add_argument("--out",        type=str, default="out", help="Where to stash the treasure (default: out)")
+    parser.add_argument("--no-pirate",  action="store_true",     help="Suppress pirate generation (cowardly, but permitted)")
     args = parser.parse_args()
 
     out_dir = Path(args.out)
@@ -524,16 +670,34 @@ def main():
 ╚══════════════════════════════════════════════════════════════╝
 """)
 
+    pirates_enabled = not args.no_pirate
+    if args.no_pirate:
+        print(
+            "\n\033[91m"  # RED — this is a serious offence
+            "╔══════════════════════════════════════════════════════════════╗\n"
+            "║   AVAST YE CRAVEN BILGE-RAT!!! --no-pirate?! --NO-PIRATE?! ║\n"
+            "║   Have ye NO honour?! No SOUL?! Ye have SHAMED this vessel! ║\n"
+            "║   The crew is WEEPING. The Jolly Roger flies at HALF MAST.  ║\n"
+            "║   May yer rum be forever watered and yer parrot be silent.  ║\n"
+            "╚══════════════════════════════════════════════════════════════╝"
+            "\033[0m\n"
+        )
+
     print(f"🎲 Rollin' the cursed dice! Conjurin' {args.count} unique combo(s) from the briny deep...")
-    specs = unique_specs(args.count)
-    print(f"   {len(specs)} spec(s) plundered. The crew be ready.\n")
+    specs = build_spec_list(args.count, pirates_enabled)
+    pirate_count = sum(1 for s in specs if isinstance(s, PirateSpec))
+    print(f"   {len(specs)} spec(s) conjured ({pirate_count} pirate(s) among 'em). The crew be ready.\n")
 
     total_prompts = len(specs) * args.images_per
     print(f"🤖 Parlayin' with the LLM oracle ({VLLM_MODEL})...")
     print(f"   Demandin' {args.images_per} fresh prompt(s) per combo — {total_prompts} total — at swordpoint.\n")
     for spec in tqdm(specs, desc="⚔️  Extortin' the oracle", unit="combo"):
-        # Each image gets its own fresh prompt — same attributes, different slop every time
-        spec.sdxl_prompts = [ask_vllm(spec) for _ in range(args.images_per)]
+        if isinstance(spec, PirateSpec):
+            tqdm.write(random.choice(PIRATE_QUIPS))
+            spec.sdxl_prompts = [ask_vllm_pirate(spec) for _ in range(args.images_per)]
+        else:
+            # Each image gets its own fresh prompt — same attributes, different slop every time
+            spec.sdxl_prompts = [ask_vllm(spec) for _ in range(args.images_per)]
 
     total_images = len(specs) * args.images_per
     print(f"\n🎨 Orderin' ComfyUI to paint {total_images} image(s) of glorious slop...")
