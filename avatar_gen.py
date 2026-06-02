@@ -134,7 +134,7 @@ class AvatarSpec:
     creature:  str
     mood:      str
     lighting:  str
-    sdxl_prompt: str = ""
+    sdxl_prompts: list = field(default_factory=list)  # One fresh prompt per image — no recycled slop!
     images: list = field(default_factory=list)
 
 
@@ -341,11 +341,11 @@ def fetch_comfy_image(image_info: dict) -> bytes:
     return resp.content
 
 
-def generate_images(spec: AvatarSpec, n: int, out_dir: Path) -> list[Path]:
-    """Generate `n` images for a spec, save to out_dir, return saved paths.
+def generate_images(spec: AvatarSpec, out_dir: Path) -> list[Path]:
+    """Send each of the spec's prompts to ComfyUI and save the resulting slop.
 
-    Each image gets a unique seed so the slop is varied. Consistent slop
-    would be somehow worse.
+    Every image gets its own freshly-written prompt AND its own random seed.
+    Maximum variety. Maximum slop. Arrr.
     """
     saved = []
     slug = (
@@ -356,9 +356,9 @@ def generate_images(spec: AvatarSpec, n: int, out_dir: Path) -> list[Path]:
         [:60]  # Filenames have limits, even if our ambitions don't
     )
 
-    for i in range(n):
+    for i, prompt in enumerate(spec.sdxl_prompts):
         seed = random.randint(0, 2**31)
-        workflow = build_comfy_workflow(spec.sdxl_prompt, NEGATIVE_PROMPT, seed)
+        workflow = build_comfy_workflow(prompt, NEGATIVE_PROMPT, seed)
         prompt_id = queue_comfy_prompt(workflow)
         images = wait_for_comfy(prompt_id)
 
@@ -407,13 +407,14 @@ def main():
     print(f"🎲 Generating {args.count} random attribute combos...")
     specs = unique_specs(args.count)
 
-    print(f"🤖 Asking vLLM ({VLLM_MODEL}) to write SDXL prompts...\n")
+    print(f"🤖 Asking vLLM ({VLLM_MODEL}) to write {args.images_per} SDXL prompt(s) per combo...\n")
     for spec in tqdm(specs, desc="LLM prompts"):
-        spec.sdxl_prompt = ask_vllm(spec)
+        # Each image gets its own fresh prompt — same attributes, different slop every time
+        spec.sdxl_prompts = [ask_vllm(spec) for _ in range(args.images_per)]
 
     print(f"\n🖼  Generating {args.images_per} image(s) per combo via ComfyUI...\n")
     for spec in tqdm(specs, desc="ComfyUI"):
-        spec.images = generate_images(spec, args.images_per, out_dir)
+        spec.images = generate_images(spec, out_dir)
 
     save_manifest(specs, out_dir)
 
