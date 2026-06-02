@@ -31,7 +31,7 @@ A curated selection of the finest slop this pipeline has produced. Note the two 
 
 <table>
 <tr>
-<td align="center" width="33%">
+<td align="center" valign="top" width="33%">
 <img src="examples/pirate_buccaneer_undead_ghost_crew_01_seed1184278254.png" width="280"/><br/>
 <b>Undead Buccaneer</b><br/>
 <sub>🏴‍☠️ Pirate mode · Buccaneer · Undead Ghost Crew</sub><br/>
@@ -40,7 +40,7 @@ A curated selection of the finest slop this pipeline has produced. Note the two 
 <sub><i>Cheerful undead male buccaneer, ghostly pirate crew member, children's book illustration style, whimsical ghost aesthetic, translucent pale blue skin, friendly wide grin, glowing oversized eyes, weathered tattered pirate hat, frayed spectral coat with gold buttons, face and shoulders close-up, stylized proportions, clean bold outlines, vibrant colors, dramatic rim lighting highlighting ghostly edges, magical shimmering atmosphere, nautical ghost motifs, high quality digital art, charming character design, vivid storytelling illustration.</i></sub>
 </details>
 </td>
-<td align="center" width="33%">
+<td align="center" valign="top" width="33%">
 <img src="examples/pirate_privateer_high_fantasy_pirate_realm_01_seed473998602.png" width="280"/><br/>
 <b>High Fantasy Privateer</b><br/>
 <sub>🏴‍☠️ Pirate mode · Privateer · High Fantasy Pirate Realm</sub><br/>
@@ -49,7 +49,7 @@ A curated selection of the finest slop this pipeline has produced. Note the two 
 <sub><i>Close-up portrait of a mischievous male high-fantasy privateer, sharp cunning eyes, smirk, weathered sun-kissed skin, ornate gold-trimmed leather doublet, silk cravat with saltwater stains, intricate gold earrings, dark fantasy digital art style, moody chiaroscuro lighting, deep dramatic shadows, high contrast, rim lighting highlighting sharp facial features, hyper-detailed skin pores, stray salt-crusted hairs, atmospheric sea mist, rich textures of worn leather and polished brass, cinematic composition, 8k resolution, intricately detailed, moody maritime aesthetic.</i></sub>
 </details>
 </td>
-<td align="center" width="33%">
+<td align="center" valign="top" width="33%">
 <img src="examples/cosmic_void_-_outer_space_art_deco_poster_half-dragon_01_seed408554112.png" width="280"/><br/>
 <b>Art Deco Half-Dragon</b><br/>
 <sub>🌌 Cosmic Void / Outer Space · Art Deco Poster · Half-Dragon</sub><br/>
@@ -60,16 +60,16 @@ A curated selection of the finest slop this pipeline has produced. Note the two 
 </td>
 </tr>
 <tr>
-<td align="center" width="33%">
-<img src="examples/haunted_gothic_manor_psychedelic_surrealism_vampire_01_seed73181093.png" width="280"/><br/>
-<b>Psychedelic Gothic Vampire</b><br/>
-<sub>🏚️ Haunted Gothic Manor · Psychedelic Surrealism · Vampire</sub><br/>
-<sub>seed: 73181093 · cfg: 7.0 · steps: 30</sub><br/>
+<td align="center" valign="top" width="33%">
+<img src="examples/ancient_mythology_pencil_sketch_dryad_-_tree_spirit_01_seed128284555.png" width="280"/><br/>
+<b>Ancient Dryad</b><br/>
+<sub>🌿 Ancient Mythology · Pencil Sketch · Dryad / Tree Spirit</sub><br/>
+<sub>seed: 128284555 · cfg: 7.0 · steps: 30</sub><br/>
 <details><summary>prompt</summary>
-<sub><i>Close-up portrait of a weary vampire, psychedelic surrealism, melting gothic architecture blending into skin, iridescent oil-slick textures, pale translucent skin with iridescent veins, heavy drooping eyelids, melancholic gaze, ornate high-collar Victorian lace drenched in neon fluids, floating geometric shards, haunted gothic manor background, distorted perspective, overcast diffuse lighting, soft muted shadows, dreamlike haze, intricate surrealist details, vivid clashing colors bleeding through monochrome grey, high contrast, hyper-detailed, 8k resolution, Salvador Dalí and Moebius influence.</i></sub>
+<sub><i>Detailed pencil sketch portrait of a stoic dryad tree spirit, close-up face and shoulders, intricate graphite shading, fine cross-hatching, weathered bark-like skin textures blending into porcelain features, crown of twisting willow branches and silver leaves, deep ancient eyes, ethereal bioluminescent ambient light casting soft cyan and emerald glows, soft charcoal smudging, high contrast, parchment paper texture, mythological essence, serene expression, delicate botanical filigree, sharp pencil lines, masterpiece, highly detailed anatomical drawing, mystical forest atmosphere.</i></sub>
 </details>
 </td>
-<td align="center" width="33%">
+<td align="center" valign="top" width="33%">
 <img src="examples/feudal_japan_ukiyo-e_woodblock_print_vampire_01_seed839278957.png" width="280"/><br/>
 <b>Ukiyo-e Vampire</b><br/>
 <sub>🗾 Feudal Japan · Ukiyo-e Woodblock Print · Vampire</sub><br/>
@@ -78,18 +78,18 @@ A curated selection of the finest slop this pipeline has produced. Note the two 
 <sub><i>Ukiyo-e woodblock print, close-up portrait of a deranged feudal Japanese vampire, wide manic eyes with tiny pupils, pale ghostly skin, sharp elongated fangs bared in a twisted grin, blood splatter on chin and collar, traditional ornate black kimono with gold embroidery, harsh directional spotlight casting deep dramatic shadows, flat color planes, bold ink outlines, textured washi paper grain, vintage Japanese art aesthetic, high contrast, eerie atmosphere, intricate hair ornaments, stylized facial expressions, Edo period art style.</i></sub>
 </details>
 </td>
-<td align="center" width="33%">
-<img src="examples/noir_detective_city_dark_fantasy_digital_art_cephalapod_01_seed913324501.png" width="280"/><br/>
-<b>Noir Cephalopod Detective</b><br/>
-<sub>🐙 Noir Detective City · Dark Fantasy Digital Art · Cephalopod</sub><br/>
-<sub>seed: 913324501 · cfg: 7.0 · steps: 30</sub><br/>
+<td align="center" valign="top" width="33%">
+<img src="examples/sci-fi_oil_painting_cephalapod_01_seed1642756083.png" width="280"/><br/>
+<b>Sci-Fi Cephalopod Sage</b><br/>
+<sub>🐙 Sci-Fi · Oil Painting · Cephalopod</sub><br/>
+<sub>seed: 1642756083 · cfg: 7.0 · steps: 30</sub><br/>
 <details><summary>prompt</summary>
-<sub><i>Hyper-realistic close-up portrait of an anthropomorphic cephalopod noir detective, stoic expression, deep iridescent obsidian skin with subtle bioluminescent suckers, wearing a weathered charcoal trench coat and a tilted fedora, dark fantasy digital art style, moody noir city backdrop with rain-streaked neon reflections, extreme chiaroscuro lighting, dramatic deep shadows, sharp rim lighting, intricate skin textures, moody atmosphere, volumetric fog, cinematic composition, 8k resolution, highly detailed, polished digital painting, moody teal and amber accents.</i></sub>
+<sub><i>Close-up oil painting portrait of a wise cephalopod sage, futuristic sci-fi setting, iridescent textured skin with deep indigo and gold hues, large intelligent luminous eyes reflecting ancient knowledge, flowing organic tentacles framing the face, thick impasto brushstrokes, visible canvas texture, dramatic flickering torch light casting deep warm orange shadows, high contrast chiaroscuro, cinematic composition, rich pigment blends, detailed organic folds, ethereal atmosphere, masterpiece, highly detailed oil on canvas.</i></sub>
 </details>
 </td>
 </tr>
 <tr>
-<td align="center" width="33%">
+<td align="center" valign="top" width="33%">
 <img src="examples/underground_mushroom_kingdom_psychedelic_surrealism_orc_01_seed1214150001.png" width="280"/><br/>
 <b>Scheming Mushroom Orc</b><br/>
 <sub>🍄 Underground Mushroom Kingdom · Psychedelic Surrealism · Orc</sub><br/>
@@ -98,7 +98,7 @@ A curated selection of the finest slop this pipeline has produced. Note the two 
 <sub><i>Close-up portrait of a scheming orc, cunning smirk, narrowing eyes, detailed green textured skin, underground mushroom kingdom backdrop, towering iridescent fungi, psychedelic surrealism, swirling kaleidoscopic patterns, vibrant neon spores, flickering warm torch light, deep dramatic shadows, high contrast, intricate leather armor with fungal growths, oil painting style, hallucinogenic color palette, sharp focus, hyper-detailed skin pores, surreal distorted perspective, cosmic dreamlike atmosphere, cinematic lighting, 8k resolution, ornate organic details.</i></sub>
 </details>
 </td>
-<td align="center" width="33%">
+<td align="center" valign="top" width="33%">
 <img src="examples/cyberpunk_ukiyo-e_woodblock_print_anthropomorphic_frog_01_seed1759102323.png" width="280"/><br/>
 <b>Cyberpunk Ukiyo-e Frog</b><br/>
 <sub>🐸 Cyberpunk · Ukiyo-e Woodblock Print · Anthropomorphic Frog</sub><br/>
@@ -107,7 +107,7 @@ A curated selection of the finest slop this pipeline has produced. Note the two 
 <sub><i>Close-up portrait of an anthropomorphic frog in a cyberpunk ukiyo-e woodblock print style, smug and annoying facial expression, narrowed eyes, smirk, wearing a high-tech neon-integrated kimono with circuitry patterns, flickering warm candlelight illuminating one side of the face, deep shadows, traditional Japanese woodblock texture, bold ink outlines, flat vibrant colors, holographic elements, futuristic urban background with stylized clouds and circuitry, intricate organic skin textures, gold leaf accents, high contrast, atmospheric chiaroscuro, masterpiece, traditional Edo period aesthetic fused with sci-fi.</i></sub>
 </details>
 </td>
-<td align="center" width="33%">
+<td align="center" valign="top" width="33%">
 <img src="examples/sci-fi_baroque_portrait_painting_anthropomorphic_red_panda_01_seed1445539922.png" width="280"/><br/>
 <b>Baroque Sci-Fi Red Panda</b><br/>
 <sub>🚀 Sci-Fi · Baroque Portrait Painting · Anthropomorphic Red Panda</sub><br/>
