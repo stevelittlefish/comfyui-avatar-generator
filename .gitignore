@@ -1,0 +1,25 @@
+# Arrr, these be the files we cast overboard!
+
+# The slop itself — generated output directories
+out/
+avatars/
+
+# Python bilge water
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments — every crew has their own, we don't need yours
+venv/
+.venv/
+env/
+
+# IDE flotsam
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS barnacles
+.DS_Store
+Thumbs.db

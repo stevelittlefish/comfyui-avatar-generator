@@ -395,10 +395,18 @@ def save_manifest(specs: list[AvatarSpec], out_dir: Path):
 def main():
     import urllib.parse  # needed inside fetch_comfy_image
 
-    parser = argparse.ArgumentParser(description="Avatar generation pipeline — AI slop ahoy!")
-    parser.add_argument("--count",      type=int, default=20,       help="Number of unique attribute combos")
-    parser.add_argument("--images-per", type=int, default=2,        help="Images generated per combo")
-    parser.add_argument("--out",        type=str, default="./avatars", help="Output directory")
+    parser = argparse.ArgumentParser(
+        description=(
+            "⚓ AVATAR SLOP GENERATOR 3000 ⚓\n"
+            "Arrr! This here vessel uses one AI to write prompts for another AI\n"
+            "to paint glorious slop. No artistic merit. No regrets.\n"
+        ),
+        epilog="May yer slop be plentiful and yer GPU stay cool. Arrr! 🏴‍☠️",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--count",      type=int, default=1,    help="Number of unique attribute combos to plunder (default: 1)")
+    parser.add_argument("--images-per", type=int, default=1,    help="Pieces of slop to generate per combo — each gets a fresh prompt (default: 1)")
+    parser.add_argument("--out",        type=str, default="out", help="Where to stash the treasure (default: out)")
     args = parser.parse_args()
 
     out_dir = Path(args.out)
