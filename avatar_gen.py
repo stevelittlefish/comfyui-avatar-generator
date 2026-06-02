@@ -9,6 +9,9 @@ cyberpunk vampire orcs. Ye have been warned.
 
 Usage:
     python avatar_gen.py [--count 20] [--images-per 2] [--out ./avatars]
+                         [--setting "cyberpunk"] [--art-style "oil painting"]
+                         [--creature "vampire"] [--mood "menacing"] [--lighting "neon glow"]
+    Special: --creature pirate activates full pirate mode. Ye have been warned.
 
 Requirements:
     pip install requests pillow tqdm
@@ -258,6 +261,45 @@ PIRATE_QUIPS = [
     "🔭  Land ho! And also — a pirate. Mostly a pirate.",
 ]
 
+# Displayed once, magnificently, when the user types --creature pirate and dooms themselves.
+# Built programmatically so ljust/center guarantee alignment regardless of content length.
+# (Emoji inside box borders cause terminal width mismatches — keep 'em outside the ║ lines.)
+def _build_pirate_splash() -> str:
+    W = 75
+    top = "╔" + "═" * W + "╗"
+    sep = "╠" + "═" * W + "╣"
+    bot = "╚" + "═" * W + "╝"
+    def row(text=""):   return "║" + text.ljust(W) + "║"
+    def centre(text):   return "║" + text.center(W) + "║"
+    skulls = "  ☠️  " * 14
+    return "\033[93m\n" + "\n".join([
+        skulls, "",
+        top,
+        row(),
+        centre("F U L L   P I R A T E   M O D E   A C T I V A T E D"),
+        row(),
+        sep,
+        row(),
+        row('   Arrr, so ye typed "--creature pirate" did ye?  The AUDACITY.'),
+        row("   The VISION.  Every. Single. Generation. Will. Be. A. Pirate."),
+        row("   Not some of them.  Not most of them.  ALL OF THEM."),
+        row(),
+        row("   The --no-pirate flag?  It walked the plank.  It sleeps with the"),
+        row("   fishes.  It is GONE.  Ye asked for pirates and pirates ye SHALL have."),
+        row(),
+        row("   The parrot has been briefed.  The rum has been cracked open."),
+        row("   The LLM has been informed.  It is ready.  It is HONOURED."),
+        row("   It will describe pirates until its context window overflows."),
+        row(),
+        row("   The pirate AI stares back at ye from the void."),
+        row("   It does not blink.  It does not falter.  It generates slop."),
+        row(),
+        bot, "",
+        skulls,
+    ]) + "\n\033[0m"
+
+FULL_PIRATE_MODE_SPLASH = _build_pirate_splash()
+
 
 # ──────────────────────────────────────────────
 # DATA MODEL
@@ -306,17 +348,18 @@ class PirateSpec:
 # Roll the dice, sailor. Whatever comes up, we're paintin' it.
 # ──────────────────────────────────────────────
 
-def random_spec() -> AvatarSpec:
+def random_spec(overrides: dict = None) -> AvatarSpec:
+    ov = overrides or {}
     return AvatarSpec(
-        setting   = random.choice(SETTINGS),
-        art_style = random.choice(ART_STYLES),
-        creature  = random.choice(CREATURES),
-        mood      = random.choice(MOODS),
-        lighting  = random.choice(LIGHTING),
+        setting   = ov.get("setting")   or random.choice(SETTINGS),
+        art_style = ov.get("art_style") or random.choice(ART_STYLES),
+        creature  = ov.get("creature")  or random.choice(CREATURES),
+        mood      = ov.get("mood")      or random.choice(MOODS),
+        lighting  = ov.get("lighting")  or random.choice(LIGHTING),
     )
 
 
-def unique_specs(count: int) -> list[AvatarSpec]:
+def unique_specs(count: int, overrides: dict = None) -> list[AvatarSpec]:
     """Generate `count` specs with no duplicate attribute combos.
 
     Arrr, even slop deserves variety. No two identical cyberpunk zombie
@@ -331,7 +374,7 @@ def unique_specs(count: int) -> list[AvatarSpec]:
             # The attribute pools be finite, ye greedy landlubber
             print(f"☠️  Arrr! Only {len(specs)} unique combos left in these waters — droppin' the uniqueness anchor and sailin' on!")
             break
-        s = random_spec()
+        s = random_spec(overrides)
         key = (s.setting, s.art_style, s.creature, s.mood, s.lighting)
         if key not in seen:
             seen.add(key)
@@ -339,32 +382,55 @@ def unique_specs(count: int) -> list[AvatarSpec]:
     return specs
 
 
-def random_pirate_spec() -> PirateSpec:
+def random_pirate_spec(overrides: dict = None) -> PirateSpec:
     # Yo ho ho. Another pirate for the oracle to describe.
+    ov = overrides or {}
     return PirateSpec(
         role      = random.choice(PIRATE_ROLES),
         era       = random.choice(PIRATE_ERAS),
-        art_style = random.choice(ART_STYLES),
-        mood      = random.choice(MOODS),
-        lighting  = random.choice(LIGHTING),
+        art_style = ov.get("art_style") or random.choice(ART_STYLES),
+        mood      = ov.get("mood")      or random.choice(MOODS),
+        lighting  = ov.get("lighting")  or random.choice(LIGHTING),
     )
 
 
-def build_spec_list(count: int, pirates_enabled: bool) -> list:
+def unique_pirate_specs(count: int, overrides: dict = None) -> list[PirateSpec]:
+    """Deduplicated pirate specs — even a fleet of pirates deserves variety."""
+    seen = set()
+    specs = []
+    attempts = 0
+    while len(specs) < count:
+        attempts += 1
+        if attempts > count * 20:
+            print(f"☠️  Only {len(specs)} unique pirate combos available — the ocean be too small for more!")
+            break
+        s = random_pirate_spec(overrides)
+        key = (s.role, s.era, s.art_style, s.mood, s.lighting)
+        if key not in seen:
+            seen.add(key)
+            specs.append(s)
+    return specs
+
+
+def build_spec_list(count: int, pirates_enabled: bool, full_pirate_mode: bool = False, overrides: dict = None) -> list:
     """Build the final spec list, injecting pirates at their rightful positions.
 
     Rules of engagement:
+    - full_pirate_mode: ALL specs are pirates. Every last one. No exceptions.
     - count == 1: no pirates (not enough crew to hide 'em among)
     - --no-pirate: cowardice rewarded, pirates suppressed
     - otherwise: spec[1] is ALWAYS a pirate; each later spec has a 1-in-8 chance
     """
-    specs = list(unique_specs(count))
+    if full_pirate_mode:
+        # The user asked for pirates. They get ONLY pirates. Glorious.
+        return list(unique_pirate_specs(count, overrides))
+    specs = list(unique_specs(count, overrides))
     if not pirates_enabled or count < 2:
         return specs
-    specs[1] = random_pirate_spec()
+    specs[1] = random_pirate_spec(overrides)
     for i in range(2, len(specs)):
         if random.random() < 1 / 8:
-            specs[i] = random_pirate_spec()
+            specs[i] = random_pirate_spec(overrides)
     return specs
 
 
@@ -643,6 +709,12 @@ def main():
     parser.add_argument("--images-per", type=int, default=1,    help="Pieces of slop to generate per combo — each gets a fresh prompt (default: 1)")
     parser.add_argument("--out",        type=str, default="out", help="Where to stash the treasure (default: out)")
     parser.add_argument("--no-pirate",  action="store_true",     help="Suppress pirate generation (cowardly, but permitted)")
+    # Per-attribute overrides — null means "pick randomly from the pool, as the fates decree"
+    parser.add_argument("--setting",    type=str, default=None,  help="Fix the setting for all generations (default: random). E.g. 'cyberpunk'")
+    parser.add_argument("--art-style",  type=str, default=None,  help="Fix the art style for all generations (default: random). E.g. 'oil painting'")
+    parser.add_argument("--creature",   type=str, default=None,  help="Fix the creature for all generations (default: random). Special: 'pirate' unleashes full pirate mode. Arrr.")
+    parser.add_argument("--mood",       type=str, default=None,  help="Fix the mood for all generations (default: random). E.g. 'menacing'")
+    parser.add_argument("--lighting",   type=str, default=None,  help="Fix the lighting for all generations (default: random). E.g. 'neon glow'")
     args = parser.parse_args()
 
     out_dir = Path(args.out)
@@ -670,8 +742,12 @@ def main():
 ╚══════════════════════════════════════════════════════════════╝
 """)
 
-    pirates_enabled = not args.no_pirate
-    if args.no_pirate:
+    # Detect the sacred invocation of full pirate mode
+    full_pirate_mode = bool(args.creature and args.creature.lower() == "pirate")
+
+    if full_pirate_mode:
+        print(FULL_PIRATE_MODE_SPLASH)
+    elif args.no_pirate:
         print(
             "\n\033[91m"  # RED — this is a serious offence
             "╔══════════════════════════════════════════════════════════════╗\n"
@@ -683,8 +759,22 @@ def main():
             "\033[0m\n"
         )
 
+    # Build the overrides dict — only include attrs the user actually pinned
+    overrides = {
+        k: v for k, v in {
+            "setting":   args.setting,
+            "art_style": args.art_style,
+            # In full pirate mode, --creature pirate is the trigger, not a creature name
+            "creature":  None if full_pirate_mode else args.creature,
+            "mood":      args.mood,
+            "lighting":  args.lighting,
+        }.items() if v
+    }
+
+    pirates_enabled = not args.no_pirate or full_pirate_mode  # full pirate mode overrules cowardice
+
     print(f"🎲 Rollin' the cursed dice! Conjurin' {args.count} unique combo(s) from the briny deep...")
-    specs = build_spec_list(args.count, pirates_enabled)
+    specs = build_spec_list(args.count, pirates_enabled, full_pirate_mode=full_pirate_mode, overrides=overrides)
     pirate_count = sum(1 for s in specs if isinstance(s, PirateSpec))
     print(f"   {len(specs)} spec(s) conjured ({pirate_count} pirate(s) among 'em). The crew be ready.\n")
 
