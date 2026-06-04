@@ -8,7 +8,7 @@ Arrr, this be a pipeline of pure slop. Three AIs, zero artistry, infinite
 cyberpunk vampire orcs. Ye have been warned.
 
 Usage:
-    python avatar_gen.py [--count 20] [--images-per 2] [--out ./avatars]
+    python avatar_gen.py [--count 20] [--images-per 2] [--out ./avatars] [--jpg]
                          [--setting "cyberpunk"] [--art-style "oil painting"]
                          [--creature "vampire"] [--mood "menacing"] [--lighting "neon glow"]
     Ye are advised not to experiment with unusual creature values. Ye have been warned.
@@ -29,6 +29,7 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 import requests
+from PIL import Image
 from tqdm import tqdm
 
 # ──────────────────────────────────────────────
@@ -1073,7 +1074,17 @@ def wait_for_comfy(prompt_id: str, timeout: int = 300) -> list[dict]:
         if resp.status_code == 200:
             history = resp.json()
             if prompt_id in history:
-                outputs = history[prompt_id].get("outputs", {})
+                entry = history[prompt_id]
+                status = entry.get("status", {})
+                if status.get("status_str") == "error":
+                    # Drag the error message up from the depths where ComfyUI buried it
+                    msgs = status.get("messages", [])
+                    raise RuntimeError(f"☠️  ComfyUI job failed. Messages: {msgs}")
+                if not status.get("completed"):
+                    # Still running — keep waiting, sailor
+                    time.sleep(2)
+                    continue
+                outputs = entry.get("outputs", {})
                 images = []
                 for node_output in outputs.values():
                     images.extend(node_output.get("images", []))
@@ -1095,7 +1106,7 @@ def fetch_comfy_image(image_info: dict) -> bytes:
     return resp.content
 
 
-def generate_images(spec: AvatarSpec, out_dir: Path) -> list[Path]:
+def generate_images(spec: AvatarSpec, out_dir: Path, save_jpg: bool = False) -> list[Path]:
     """Send each of the spec's prompts to ComfyUI and save the resulting slop.
 
     Every image gets its own freshly-written prompt AND its own random seed.
@@ -1115,6 +1126,11 @@ def generate_images(spec: AvatarSpec, out_dir: Path) -> list[Path]:
             fname = out_dir / f"{slug}_{i+1:02d}_seed{seed}.png"
             fname.write_bytes(img_bytes)
             saved.append(fname)
+            if save_jpg:
+                # Pillow can't save RGBA as JPEG — flatten to RGB first
+                jpg_fname = fname.with_suffix(".jpg")
+                img = Image.open(fname).convert("RGB")
+                img.save(jpg_fname, "JPEG", quality=92)
 
     return saved
 
@@ -1165,6 +1181,7 @@ def main():
     parser.add_argument("--creature",   type=str, default=None,  help="Fix the creature for all generations (default: random). E.g. 'vampire'")
     parser.add_argument("--mood",       type=str, default=None,  help="Fix the mood for all generations (default: random). E.g. 'menacing'")
     parser.add_argument("--lighting",   type=str, default=None,  help="Fix the lighting for all generations (default: random). E.g. 'neon glow'")
+    parser.add_argument("--jpg",        action="store_true",     help="Save a JPEG alongside each PNG (quality 92) — for those who can't be trusted with raw slop")
     parser.add_argument("--more-help",  action="store_true",     help="Print extended guidance (ye have been warned)")
     args = parser.parse_args()
 
@@ -1276,7 +1293,7 @@ def main():
     print(f"\n🎨 Orderin' ComfyUI to paint {total_images} image(s) of glorious slop...")
     print(f"   Patience, sailor. The kraken renders at its own pace. Do not rush the slop.\n")
     for spec in tqdm(specs, desc="🖼️  Sloppin' the canvas", unit="combo"):
-        spec.images = generate_images(spec, out_dir)
+        spec.images = generate_images(spec, out_dir, save_jpg=args.jpg)
 
     save_manifest(specs, out_dir)
 
