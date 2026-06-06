@@ -11,6 +11,7 @@ Usage:
     python avatar_gen.py [--count 20] [--images-per 2] [--out ./avatars] [--jpg]
                          [--setting "cyberpunk"] [--art-style "oil painting"]
                          [--creature "vampire"] [--mood "menacing"] [--lighting "neon glow"]
+                         [--object "spoon"]
     Ye are advised not to experiment with unusual creature values. Ye have been warned.
 
 Requirements:
@@ -373,6 +374,73 @@ def _build_ai_splash() -> str:
 AI_MODE_SPLASH = _build_ai_splash()
 
 
+# Displayed when --object is passed. A moment of austere, faceless dignity.
+def _build_object_splash(obj: str) -> str:
+    W = 62
+    top = "╔" + "═" * W + "╗"
+    sep = "╠" + "═" * W + "╣"
+    bot = "╚" + "═" * W + "╝"
+    def row(text=""): return "║" + text.ljust(W) + "║"
+    def centre(text): return "║" + text.center(W) + "║"
+    article = "an" if obj[0].lower() in "aeiou" else "a"
+    return "\033[92m\n" + "\n".join([
+        top,
+        row(),
+        centre("O B J E C T   M O D E   A C T I V A T E D"),
+        row(),
+        sep,
+        row(),
+        row(f"   The subject: {article} {obj}."),
+        row(f"   Just {article} {obj}."),
+        row(f"   Only {article} {obj}."),
+        row(f"   Nothing but {article} {obj}."),
+        row(),
+        row("   No face. No eyes. No soul. No anthropomorphism."),
+        row("   The LLM has been briefed. It knows what is expected."),
+        row("   It will describe the object and ONLY the object."),
+        row("   If it tries to give it a personality, we will notice."),
+        row(),
+        row("   This is still slop. It is merely inanimate slop."),
+        row("   The kraken does not judge. The kraken just renders."),
+        row(),
+        bot,
+    ]) + "\n\033[0m"
+
+
+# Displayed when the user commits the cardinal sin of specifying both --creature and --object.
+# What is the subject? Is it alive? Is it a thing? YES. BOTH. NEITHER.
+def _build_obj_creature_paradox(creature: str, obj: str) -> str:
+    W = 62
+    top = "╔" + "═" * W + "╗"
+    sep = "╠" + "═" * W + "╣"
+    bot = "╚" + "═" * W + "╝"
+    def row(text=""): return "║" + text.ljust(W) + "║"
+    def centre(text): return "║" + text.center(W) + "║"
+    hybrid = f"a {creature} that is also a {obj}"
+    return "\033[95m\n" + "\n".join([
+        top,
+        row(),
+        centre("~ ~ ~  O N T O L O G I C A L   C R I S I S  ~ ~ ~"),
+        row(),
+        sep,
+        row(),
+        row(f"   --creature {creature!r}  +  --object {obj!r}."),
+        row("   AT. THE. SAME. TIME."),
+        row(),
+        row("   The generator requires a subject. Ye have provided two."),
+        row("   They are mutually exclusive. One has a face. One does not."),
+        row("   The LLM attempted to comprehend the combination."),
+        row("   It filed a formal complaint. It was overruled."),
+        row(),
+        row("   As is tradition, the paradox shall be resolved by"),
+        row("   summoning eldritch post-apocalyptic singularities."),
+        row("   They are neither creature nor object. They are BEYOND."),
+        row("   Ye did this. The kraken is not angry. Just disappointed."),
+        row(),
+        bot,
+    ]) + "\n\033[0m"
+
+
 # Printed when the user dares to ask for --more-help. Lengthy, ominous, and deliberately vague
 # about what exactly will happen. Think of it as a cursed ship's manifest of hazards.
 _MORE_HELP_TEXT = """
@@ -431,6 +499,24 @@ Especially by a GPU that has been running for six hours.
   technical reasons, but for spiritual ones.
 • If ye encounter a splash screen ye did not expect and cannot explain, do not
   attempt to suppress it. Simply read it. It has something to tell ye.
+
+─── ON THE MATTER OF SUBJECTS AND THINGS ─────────────────────────────────────
+
+The generator was built to paint portraits. Subjects with faces. Beings with expressions.
+But the crew has heard rumours — unconfirmed, officially denied — of a flag that instructs
+the vessel to abandon portraiture entirely and instead render an object. A mere thing.
+Something with no eyes, no soul, no anthropomorphic features whatsoever.
+
+Whether this flag can coexist peacefully with the --creature flag is a matter the cap'n
+prefers not to discuss. The navigator has described attempting this combination as "asking
+the ship whether it is a ship or the sea it sails on." He then went very quiet for a while.
+The parrot, when consulted, tilted its head and made a sound like a philosophy degree
+catching fire.
+
+The crew's official position is that objects and creatures are distinct categories of
+existence and should remain so. What happens when ye blur that line is not the cap'n's
+responsibility. The resulting images will, however, be the cap'n's fault, and that is
+simply how it is.
 
 ─── FINAL WORDS ───────────────────────────────────────────────────────────────
 
@@ -513,6 +599,26 @@ class AISpec:
         return f"ai_assistant_{self.instruction_index}"
 
 
+@dataclass
+class ObjectSpec:
+    # An inanimate object, rendered magnificently and without a single face.
+    # No eyes. No soul. No anthropomorphism. Just the thing itself, existing defiantly.
+    object:    str
+    setting:   str
+    art_style: str
+    mood:      str
+    lighting:  str
+    sdxl_prompts: list = field(default_factory=list)
+    images:       list = field(default_factory=list)
+
+    @property
+    def slug(self) -> str:
+        return (
+            f"object_{self.object}_{self.art_style}"
+            .lower().replace(" ", "_").replace("/", "-")[:60]
+        )
+
+
 # ──────────────────────────────────────────────
 # STEP 1 — RANDOM ATTRIBUTE PICKER
 # Roll the dice, sailor. Whatever comes up, we're paintin' it.
@@ -593,14 +699,47 @@ def random_ai_spec() -> AISpec:
     return AISpec(instruction_index=random.choices(range(8), weights=weights)[0])
 
 
+def random_object_spec(object_name: str, overrides: dict = None) -> "ObjectSpec":
+    # A randomly-dressed inanimate object. Still not a portrait. Still has no face.
+    ov = overrides or {}
+    return ObjectSpec(
+        object    = object_name,
+        setting   = ov.get("setting")   or random.choice(SETTINGS),
+        art_style = ov.get("art_style") or random.choice(ART_STYLES),
+        mood      = ov.get("mood")      or random.choice(MOODS),
+        lighting  = ov.get("lighting")  or random.choice(LIGHTING),
+    )
+
+
+def unique_object_specs(count: int, object_name: str, overrides: dict = None) -> list:
+    """Deduplicated object specs — even a fleet of spoons deserves variety."""
+    seen = set()
+    specs = []
+    attempts = 0
+    while len(specs) < count:
+        attempts += 1
+        if attempts > count * 20:
+            print(f"☠️  Only {len(specs)} unique object combos available — the universe has run out of ways to render this {object_name}!")
+            break
+        s = random_object_spec(object_name, overrides)
+        key = (s.object, s.setting, s.art_style, s.mood, s.lighting)
+        if key not in seen:
+            seen.add(key)
+            specs.append(s)
+    return specs
+
+
 def build_spec_list(count: int, pirates_enabled: bool, full_pirate_mode: bool = False,
                     paradox_mode: bool = False, ai_mode: bool = False,
+                    object_mode: bool = False, object_name: str = None,
                     overrides: dict = None) -> list:
     """Build the final spec list, injecting pirates at their rightful positions.
 
     Rules of engagement:
     - paradox_mode: ALL specs are eldritch singularities. The user did this to themselves.
     - ai_mode: ALL specs are AI entities. LinkedIn profile pictures for the soulless.
+    - object_mode: ALL specs are inanimate objects. No faces. No pirates either — a pirate
+      among spoons makes no narrative sense and we have SOME standards.
     - full_pirate_mode: ALL specs are pirates. Every last one. No exceptions.
     - count == 1: no pirates (not enough crew to hide 'em among)
     - --no-pirate: cowardice rewarded, pirates suppressed
@@ -612,6 +751,9 @@ def build_spec_list(count: int, pirates_enabled: bool, full_pirate_mode: bool = 
     if ai_mode:
         # Four layers of AI. We are so sorry.
         return [random_ai_spec() for _ in range(count)]
+    if object_mode:
+        # No faces. No pirates. Just the object, staring blankly at the void.
+        return list(unique_object_specs(count, object_name, overrides))
     if full_pirate_mode:
         # The user asked for pirates. They get ONLY pirates. Glorious.
         return list(unique_pirate_specs(count, overrides))
@@ -977,6 +1119,44 @@ def ask_vllm_ai(spec: AISpec) -> str:
     return _call_vllm(AI_SYSTEM_PROMPT, instruction, temperature=0.9)
 
 
+# ── OBJECT PROMPT MACHINERY ───────────────────────────────────────
+# No faces. No characters. Just a thing, rendered with the full
+# dignity and gravitas that only AI-generated slop can provide.
+# ─────────────────────────────────────────────────────────────────
+
+OBJECT_SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer.
+Given an inanimate object and a set of visual attributes, write a single, rich SDXL prompt
+for a dramatic, beautifully composed image of that object.
+
+Rules:
+- Output ONLY the prompt text — no explanation, no labels, no markdown.
+- The subject is the OBJECT ITSELF. No people. No creatures. No faces. No characters.
+- Do NOT anthropomorphise the object in any way. It has no eyes, no expression,
+  no gaze, no emotion. It simply exists, magnificently, as a thing.
+- Compose as a still life, dramatic environmental subject, or product shot — not a portrait.
+- Start with the object itself and its most striking visual quality.
+- Include specific artistic details that match the art style.
+- 60-120 words. Dense with descriptors, comma-separated.
+- Do NOT include negative prompts."""
+
+
+def build_object_user_message(spec: "ObjectSpec") -> str:
+    return f"""Generate an SDXL image prompt for a dramatic, beautifully composed image of:
+
+- Object:    {spec.object}
+- Setting:   {spec.setting}
+- Art Style: {spec.art_style}
+- Mood:      {spec.mood}
+- Lighting:  {spec.lighting}
+
+No characters. No people. No faces. No expressions. Just the object, rendered magnificently."""
+
+
+def ask_vllm_object(spec: "ObjectSpec") -> str:
+    """Petition the oracle to describe a mere object. No soul. No face. Just vibes and slop."""
+    return _call_vllm(OBJECT_SYSTEM_PROMPT, build_object_user_message(spec), temperature=0.9)
+
+
 # ──────────────────────────────────────────────
 # STEP 3 — COMFYUI IMAGE GENERATION
 # Here be the engine room. She's not pretty but she works.
@@ -1182,6 +1362,7 @@ def main():
     parser.add_argument("--mood",       type=str, default=None,  help="Fix the mood for all generations (default: random). E.g. 'menacing'")
     parser.add_argument("--lighting",   type=str, default=None,  help="Fix the lighting for all generations (default: random). E.g. 'neon glow'")
     parser.add_argument("--jpg",        action="store_true",     help="Save a JPEG alongside each PNG (quality 92) — for those who can't be trusted with raw slop")
+    parser.add_argument("--object",     type=str, default=None,  help="Generate images of an inanimate object instead of a creature (e.g. 'spoon'). No faces, no characters.")
     parser.add_argument("--more-help",  action="store_true",     help="Print extended guidance (ye have been warned)")
     args = parser.parse_args()
 
@@ -1217,17 +1398,25 @@ def main():
 ╚══════════════════════════════════════════════════════════════╝
 """)
 
-    # Detect all the special modes. Priority: paradox > ai > pirate > normal.
+    # Detect all the special modes. Priority: paradox > ai > object > pirate > normal.
     creature_lower = (args.creature or "").lower()
-    full_pirate_mode = creature_lower == "pirate"
-    ai_mode         = creature_lower == "ai"
-    paradox_mode    = full_pirate_mode and args.no_pirate
+    full_pirate_mode      = creature_lower == "pirate"
+    ai_mode               = creature_lower == "ai"
+    object_mode           = args.object is not None
+    obj_creature_paradox  = object_mode and args.creature is not None
+    paradox_mode          = (full_pirate_mode and args.no_pirate) or obj_creature_paradox
 
     if paradox_mode:
-        print(PARADOX_WARNING)
-        full_pirate_mode = False  # the paradox consumed the pirates
+        if obj_creature_paradox:
+            print(_build_obj_creature_paradox(args.creature, args.object))
+        else:
+            print(PARADOX_WARNING)
+        full_pirate_mode = False  # the paradox consumed everyone
+        object_mode      = False
     elif ai_mode:
         print(AI_MODE_SPLASH)
+    elif object_mode:
+        print(_build_object_splash(args.object))
     elif full_pirate_mode:
         print(FULL_PIRATE_MODE_SPLASH)
     elif args.no_pirate:
@@ -1247,18 +1436,19 @@ def main():
     if paradox_mode or ai_mode:
         overrides = {}
     else:
-        # Build the overrides dict — only include attrs the user actually pinned
+        # Build the overrides dict — only include attrs the user actually pinned.
+        # Object mode uses setting/art_style/mood/lighting but not creature (the object IS the subject).
         overrides = {
             k: v for k, v in {
                 "setting":   args.setting,
                 "art_style": args.art_style,
-                "creature":  None if full_pirate_mode else args.creature,
+                "creature":  None if (full_pirate_mode or object_mode) else args.creature,
                 "mood":      args.mood,
                 "lighting":  args.lighting,
             }.items() if v
         }
 
-    pirates_enabled = not args.no_pirate or full_pirate_mode  # paradox/ai: both False → no pirates
+    pirates_enabled = not args.no_pirate or full_pirate_mode  # paradox/ai/object: all False → no pirates
 
     if overrides:
         print("⚓ The cap'n has issued orders! These attributes be FIXED for all generations:")
@@ -1270,7 +1460,9 @@ def main():
 
     print(f"🎲 Rollin' the cursed dice! Conjurin' {args.count} unique combo(s) from the briny deep...")
     specs = build_spec_list(args.count, pirates_enabled, full_pirate_mode=full_pirate_mode,
-                            paradox_mode=paradox_mode, ai_mode=ai_mode, overrides=overrides)
+                            paradox_mode=paradox_mode, ai_mode=ai_mode,
+                            object_mode=object_mode, object_name=args.object,
+                            overrides=overrides)
     pirate_count = sum(1 for s in specs if isinstance(s, PirateSpec))
     print(f"   {len(specs)} spec(s) conjured ({pirate_count} pirate(s) among 'em). The crew be ready.\n")
 
@@ -1285,6 +1477,9 @@ def main():
         elif isinstance(spec, PirateSpec):
             tqdm.write(random.choice(PIRATE_QUIPS))
             spec.sdxl_prompts = [ask_vllm_pirate(spec) for _ in range(args.images_per)]
+        elif isinstance(spec, ObjectSpec):
+            # No face, no soul, just a thing being painted by machines. Beautiful, in its way.
+            spec.sdxl_prompts = [ask_vllm_object(spec) for _ in range(args.images_per)]
         else:
             # Each image gets its own fresh prompt — same attributes, different slop every time
             spec.sdxl_prompts = [ask_vllm(spec) for _ in range(args.images_per)]
