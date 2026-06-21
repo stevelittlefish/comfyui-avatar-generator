@@ -23,6 +23,7 @@ import base64
 import itertools
 import json
 import random
+import shlex
 import time
 import urllib.request
 import urllib.error
@@ -647,8 +648,10 @@ def unique_specs(count: int, overrides: dict = None) -> list[AvatarSpec]:
     while len(specs) < count:
         attempts += 1
         if attempts > count * 20:
-            # The attribute pools be finite, ye greedy landlubber
-            print(f"☠️  Arrr! Only {len(specs)} unique combos left in these waters — droppin' the uniqueness anchor and sailin' on!")
+            # The attribute pools be finite, ye greedy landlubber — or ye pinned everything and left us no room to manoeuvre
+            print(f"☠️  Arrr! Only {len(specs)} unique combos left in these waters — repeatin' specs to fill yer {count}!")
+            while len(specs) < count:
+                specs.append(random_spec(overrides))
             break
         s = random_spec(overrides)
         key = (s.setting, s.art_style, s.creature, s.mood, s.lighting)
@@ -678,7 +681,9 @@ def unique_pirate_specs(count: int, overrides: dict = None) -> list[PirateSpec]:
     while len(specs) < count:
         attempts += 1
         if attempts > count * 20:
-            print(f"☠️  Only {len(specs)} unique pirate combos available — the ocean be too small for more!")
+            print(f"☠️  Only {len(specs)} unique pirate combos available — repeatin' to fill yer {count}!")
+            while len(specs) < count:
+                specs.append(random_pirate_spec(overrides))
             break
         s = random_pirate_spec(overrides)
         key = (s.role, s.era, s.art_style, s.mood, s.lighting)
@@ -719,7 +724,9 @@ def unique_object_specs(count: int, object_name: str, overrides: dict = None) ->
     while len(specs) < count:
         attempts += 1
         if attempts > count * 20:
-            print(f"☠️  Only {len(specs)} unique object combos available — the universe has run out of ways to render this {object_name}!")
+            print(f"☠️  Only {len(specs)} unique object combos available — repeatin' to fill yer {count}!")
+            while len(specs) < count:
+                specs.append(random_object_spec(object_name, overrides))
             break
         s = random_object_spec(object_name, overrides)
         key = (s.object, s.setting, s.art_style, s.mood, s.lighting)
@@ -1321,11 +1328,42 @@ def generate_images(spec: AvatarSpec, out_dir: Path, save_jpg: bool = False) -> 
 # Future archaeologists will be baffled.
 # ──────────────────────────────────────────────
 
+def spec_to_command(spec) -> str:
+    """Forge a copy-pasteable command to summon more slop of exactly this type.
+    Future ye will thank present ye. Or curse present ye. Probably both."""
+    q = shlex.quote
+    base = "python avatar_gen.py"
+    if isinstance(spec, ParadoxSpec):
+        return f"{base} --creature pirate --no-pirate"
+    elif isinstance(spec, AISpec):
+        return f"{base} --creature ai"
+    elif isinstance(spec, PirateSpec):
+        # role/era are random and have no flags — pin what we can, let the rest be fate
+        return (f"{base} --creature pirate"
+                f" --art-style {q(spec.art_style)}"
+                f" --mood {q(spec.mood)}"
+                f" --lighting {q(spec.lighting)}")
+    elif isinstance(spec, ObjectSpec):
+        return (f"{base} --object {q(spec.object)}"
+                f" --setting {q(spec.setting)}"
+                f" --art-style {q(spec.art_style)}"
+                f" --mood {q(spec.mood)}"
+                f" --lighting {q(spec.lighting)}")
+    else:  # AvatarSpec
+        return (f"{base} --no-pirate"
+                f" --setting {q(spec.setting)}"
+                f" --art-style {q(spec.art_style)}"
+                f" --creature {q(spec.creature)}"
+                f" --mood {q(spec.mood)}"
+                f" --lighting {q(spec.lighting)}")
+
+
 def save_manifest(specs: list[AvatarSpec], out_dir: Path):
     plunder = []
     for s in specs:
         d = asdict(s)
         d["images"] = [str(p) for p in s.images]
+        d["command"] = spec_to_command(s)
         plunder.append(d)
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     fname = out_dir / f"plunder_{timestamp}.json"
@@ -1391,7 +1429,7 @@ def main():
 
     print("""
 ╔══════════════════════════════════════════════════════════════╗
-║  ☠️   AVATAR SLOP GENERATOR 3000  —  THE PIRATE EDITION  ☠️  ║
+║  ☠️   AVATAR SLOP GENERATOR 3000  —  THE PIRATE EDITION  ☠️    ║
 ║                                                              ║
 ║   Three AIs. Zero taste. Infinite cyberpunk vampire orcs.    ║
 ║   All hands on deck! ⚓ The S.S. Sloptide sets sail!         ║
