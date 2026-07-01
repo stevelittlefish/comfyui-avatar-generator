@@ -5,6 +5,7 @@ We've built a recursive slop-sorting pipeline. The future is now.
 """
 
 import json
+import re
 import shutil
 import time
 from pathlib import Path
@@ -45,6 +46,21 @@ def get_positive_prompt(png_path: Path) -> str:
     return ""
 
 
+def parse_category_response(response_text: str) -> str:
+    """Turn the oracle's mutterings into a category without substring-based treachery."""
+    word = response_text.strip().lower()
+
+    # First accept a perfect answer. Miracles happen, even in slop.
+    if word in CATEGORIES:
+        return word
+
+    tokens = re.findall(r"[a-z]+", word)
+    if tokens and tokens[0] in CATEGORIES:
+        return tokens[0]
+
+    return "other"
+
+
 def classify_with_llm(prompt_text: str) -> str:
     """Ask Gemma 4 what kind of creature this is. It helped make the prompt. It can clean up its own mess."""
     payload = {
@@ -60,12 +76,10 @@ def classify_with_llm(prompt_text: str) -> str:
         resp = requests.post(f"{VLLM_BASE}/v1/chat/completions", json=payload, timeout=30)
         resp.raise_for_status()
         word = resp.json()["choices"][0]["message"]["content"].strip().lower()
-        # be forgiving if the model adds punctuation or gets chatty
-        for cat in CATEGORIES:
-            if cat in word:
-                return cat
-        print(f"  WARN: unexpected response '{word}', defaulting to 'other'")
-        return "other"
+        category = parse_category_response(word)
+        if category == "other" and word != "other":
+            print(f"  WARN: unexpected response '{word}', defaulting to 'other'")
+        return category
     except Exception as e:
         print(f"  ERROR calling vLLM: {e}")
         return "other"

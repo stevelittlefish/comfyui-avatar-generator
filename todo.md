@@ -24,7 +24,7 @@ A practical fix list from the code review. Keep it useful, keep it silly. Arrr.
 
 ## Medium priority
 
-- [ ] Make `sort_avatars.py` category parsing stricter
+- [x] Make `sort_avatars.py` category parsing stricter
   - Current code checks substring membership:
     ```py
     for cat in CATEGORIES:
@@ -32,9 +32,9 @@ A practical fix list from the code review. Keep it useful, keep it silly. Arrr.
             return cat
     ```
   - Problem: a response like `not human, animal` can be misread as `human`
-  - [ ] Prefer exact match first
-  - [ ] Then try first-token match
-  - [ ] Only then fall back to `other`
+  - [x] Prefer exact match first
+  - [x] Then try first-token match
+  - [x] Only then fall back to `other`
 
 - [ ] Make `sort_avatars.py` handle missing `out/` gracefully
   - [ ] Check `OUT_DIR.exists()` before iterating
