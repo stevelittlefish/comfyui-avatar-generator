@@ -4,9 +4,9 @@ A practical fix list from the code review. Keep it useful, keep it silly. Arrr.
 
 ## High priority
 
-- [ ] Validate CLI numeric inputs in `avatar_gen.py`
-  - [ ] Reject `--count < 1`
-  - [ ] Reject `--images-per < 1`
+- [x] Validate CLI numeric inputs in `avatar_gen.py`
+  - [x] Reject `--count < 1`
+  - [x] Reject `--images-per < 1`
   - Suggested location: after `args = parser.parse_args()`
   - Suggested behavior:
     ```py

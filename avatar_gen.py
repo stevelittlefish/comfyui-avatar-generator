@@ -1431,6 +1431,11 @@ def main():
     parser.add_argument("--more-help",  action="store_true",     help="Print extended guidance (ye have been warned)")
     args = parser.parse_args()
 
+    if args.count < 1:
+        parser.error("--count must be >= 1")
+    if args.images_per < 1:
+        parser.error("--images-per must be >= 1")
+
     if args.more_help:
         print(_MORE_HELP_TEXT)
         return
