@@ -86,6 +86,9 @@ def classify_with_llm(prompt_text: str) -> str:
 
 
 def main():
+    if not OUT_DIR.exists():
+        raise SystemExit(f"No output directory found: {OUT_DIR}")
+
     pngs = sorted(p for p in OUT_DIR.iterdir() if p.suffix == ".png" and p.parent == OUT_DIR)
     print(f"Sorting {len(pngs)} images — asking Gemma 4 to classify what it helped create...\n")
 

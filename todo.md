@@ -36,9 +36,9 @@ A practical fix list from the code review. Keep it useful, keep it silly. Arrr.
   - [x] Then try first-token match
   - [x] Only then fall back to `other`
 
-- [ ] Make `sort_avatars.py` handle missing `out/` gracefully
-  - [ ] Check `OUT_DIR.exists()` before iterating
-  - [ ] Exit with a clear message if missing
+- [x] Make `sort_avatars.py` handle missing `out/` gracefully
+  - [x] Check `OUT_DIR.exists()` before iterating
+  - [x] Exit with a clear message if missing
   - Suggested behavior:
     ```py
     if not OUT_DIR.exists():
