@@ -26,8 +26,6 @@ import json
 import random
 import shlex
 import time
-import urllib.request
-import urllib.error
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 

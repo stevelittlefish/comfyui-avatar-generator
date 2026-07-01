@@ -65,22 +65,22 @@ A practical fix list from the code review. Keep it useful, keep it silly. Arrr.
     - [x] Add a `--reinstall` flag
     - [x] Track a requirements hash/timestamp if feeling fancy, but don’t summon Kubernetes
 
-- [ ] Remove unused imports
-  - [ ] `avatar_gen.py`
-    - [ ] `urllib.request`
-    - [ ] `urllib.error`
-  - [ ] `sort_avatars.py`
-    - [ ] `time`
+- [x] Remove unused imports
+  - [x] `avatar_gen.py`
+    - [x] `urllib.request`
+    - [x] `urllib.error`
+  - [x] `sort_avatars.py`
+    - [x] `time`
 
 ## Verification checklist
 
 After fixes, run:
 
-- [ ] `./venv/bin/python -m py_compile avatar_gen.py sort_avatars.py`
-- [ ] `./venv/bin/python avatar_gen.py --help`
-- [ ] `./run.sh --help`
-- [ ] `./venv/bin/python avatar_gen.py --count 0` should fail clearly
-- [ ] `./venv/bin/python avatar_gen.py --images-per 0` should fail clearly
+- [x] `./venv/bin/python -m py_compile avatar_gen.py sort_avatars.py`
+- [x] `./venv/bin/python avatar_gen.py --help`
+- [x] `./run.sh --help`
+- [x] `./venv/bin/python avatar_gen.py --count 0` should fail clearly
+- [x] `./venv/bin/python avatar_gen.py --images-per 0` should fail clearly
 - [x] `./venv/bin/python sort_avatars.py --help` if CLI args are added
 - [x] `./venv/bin/python sort_avatars.py --out does-not-exist` should fail clearly if `--out` is added
 
