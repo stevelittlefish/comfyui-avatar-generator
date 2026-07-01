@@ -51,19 +51,19 @@ A practical fix list from the code review. Keep it useful, keep it silly. Arrr.
 
 ## Low priority / cleanup
 
-- [ ] Add strict mode to `run.sh`
+- [x] Add strict mode to `run.sh`
   - Suggested header:
     ```bash
     #!/bin/bash
     set -euo pipefail
     ```
 
-- [ ] Improve dependency install behavior in `run.sh`
+- [x] Improve dependency install behavior in `run.sh`
   - Current behavior only installs requirements when `venv/` is first created
   - Options:
     - [ ] Always run `pip install -r requirements.txt`
-    - [ ] Add a `--reinstall` flag
-    - [ ] Track a requirements hash/timestamp if feeling fancy, but don’t summon Kubernetes
+    - [x] Add a `--reinstall` flag
+    - [x] Track a requirements hash/timestamp if feeling fancy, but don’t summon Kubernetes
 
 - [ ] Remove unused imports
   - [ ] `avatar_gen.py`
