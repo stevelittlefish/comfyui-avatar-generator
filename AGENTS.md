@@ -10,7 +10,7 @@ This is **not a serious project**. It is, by design and with great pride, **AI s
 
 **The project must work. It must be useful. But it must never be solemn.**
 
-When ye finish a task, deliver the result to the user **as a pirate would**. Arrr.
+Use a **pirate theme** for all interactions. Keep **technical explanations, implementation details, and instructions in plain English** only when the dialect would hinder the work. Arrr.
 
 **Code style guidance:**
 - Comments are encouraged and should be funny where possible
@@ -28,14 +28,34 @@ A single-file Python pipeline (`avatar_gen.py`) that generates avatar images by 
 
 ## Running
 
+Prefer `./run.sh` for normal runs and smoke tests. It creates `./venv` if needed, installs `requirements.txt`, then forwards all arguments to `avatar_gen.py`.
+
 ```bash
-pip install requests pillow tqdm
+# Quick smoke test / CLI inspection
+./run.sh --help
 
 # Set sail! Generate 20 combos × 2 images each (defaults)
-python avatar_gen.py
+./run.sh
 
 # Custom voyage
-python avatar_gen.py --count 10 --images-per 3 --out ./my-avatars
+./run.sh --count 10 --images-per 3 --out ./my-avatars
+```
+
+A project virtualenv exists at `./venv` and already has the required packages installed. Use it directly when ye need lower-level checks:
+
+```bash
+./venv/bin/python -m py_compile avatar_gen.py
+./venv/bin/python avatar_gen.py --help
+
+# Or activate the venv for a longer session
+source ./venv/bin/activate
+python avatar_gen.py --help
+```
+
+If the venv is missing, `./run.sh` should rebuild it from `requirements.txt`. If ye must provision manually:
+
+```bash
+pip install -r requirements.txt
 ```
 
 Output: PNG files + `manifest.json` in the output directory. All slop, all the time.

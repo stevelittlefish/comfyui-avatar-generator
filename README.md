@@ -16,8 +16,25 @@ Randomly combines attributes (setting, art style, creature type, mood, lighting)
 
 ## Usage
 
+The easiest way to run the generator is `run.sh`. It creates `./venv` if needed, installs `requirements.txt`, then forwards all arguments to `avatar_gen.py`:
+
 ```bash
-pip install requests pillow tqdm
+./run.sh --help
+./run.sh [--count 20] [--images-per 2] [--out ./avatars]
+./run.sh --composition full-body --count 5
+```
+
+A project virtualenv lives at `./venv` too, if ye want to invoke Python directly for testing:
+
+```bash
+./venv/bin/python -m py_compile avatar_gen.py
+./venv/bin/python avatar_gen.py --help
+```
+
+Or activate it for a longer voyage:
+
+```bash
+source ./venv/bin/activate
 python avatar_gen.py [--count 20] [--images-per 2] [--out ./avatars]
 ```
 

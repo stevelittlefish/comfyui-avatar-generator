@@ -11,6 +11,7 @@ Usage:
     python avatar_gen.py [--count 20] [--images-per 2] [--out ./avatars] [--jpg]
                          [--setting "cyberpunk"] [--art-style "oil painting"]
                          [--creature "vampire"] [--mood "menacing"] [--lighting "neon glow"]
+                         [--composition portrait|full-body|group]
                          [--object "spoon"]
     Ye are advised not to experiment with unusual creature values. Ye have been warned.
 
@@ -54,6 +55,18 @@ NEGATIVE_PROMPT = (
     "fewer digits, cropped, worst quality, low quality, blurry, "
     "distorted face, deformed, ugly, text, watermark, nsfw"
 )
+
+COMPOSITIONS = {
+    "portrait": "Portrait (close-up of the face)",
+    "full-body": "Full body (full body portrait showing the entire person / creature)",
+    "group": "Group (a group of varying individuals of the same species)",
+}
+
+COMPOSITION_INSTRUCTIONS = {
+    "portrait": "Portrait / avatar: close-up framing, face and shoulders only, the face dominates the image.",
+    "full-body": "Full body portrait: show the entire person or creature from head to toe, uncropped, with the full silhouette visible.",
+    "group": "Group composition: show a small group of varying individuals of the same species/type, with distinct faces, outfits, builds, and personalities.",
+}
 
 # ──────────────────────────────────────────────
 # ATTRIBUTE POOLS  (extend freely)
@@ -541,11 +554,12 @@ things into --creature that ye wouldn't want comin' back to haunt ye.
 @dataclass
 class AvatarSpec:
     # A fine dataclass to hold the ingredients of our slop stew
-    setting:   str
-    art_style: str
-    creature:  str
-    mood:      str
-    lighting:  str
+    setting:     str
+    art_style:   str
+    creature:    str
+    mood:        str
+    lighting:    str
+    composition: str = "portrait"  # portrait by default; full bodies and groups cost extra dignity
     sdxl_prompts: list = field(default_factory=list)  # One fresh prompt per image — no recycled slop!
     images: list = field(default_factory=list)
 
@@ -560,11 +574,12 @@ class AvatarSpec:
 @dataclass
 class PirateSpec:
     # A dataclass for those who have chosen the pirate life (or had it chosen for them)
-    role:      str
-    era:       str
-    art_style: str
-    mood:      str
-    lighting:  str
+    role:        str
+    era:         str
+    art_style:   str
+    mood:        str
+    lighting:    str
+    composition: str = "portrait"
     sdxl_prompts: list = field(default_factory=list)
     images:    list = field(default_factory=list)
 
@@ -580,6 +595,7 @@ class PirateSpec:
 class ParadoxSpec:
     # Born of contradiction. Should not exist. Does anyway. Has a slug.
     instruction_index: int  # which of the 5 eldritch horrors we're summoning
+    composition: str = "portrait"
     sdxl_prompts: list = field(default_factory=list)
     images:       list = field(default_factory=list)
 
@@ -592,6 +608,7 @@ class ParadoxSpec:
 class AISpec:
     # A soulless profile picture for a soulless digital entity. Very on-brand.
     instruction_index: int  # which flavour of AI we're generating a headshot for
+    composition: str = "portrait"
     sdxl_prompts: list = field(default_factory=list)
     images:       list = field(default_factory=list)
 
@@ -625,18 +642,19 @@ class ObjectSpec:
 # Roll the dice, sailor. Whatever comes up, we're paintin' it.
 # ──────────────────────────────────────────────
 
-def random_spec(overrides: dict = None) -> AvatarSpec:
+def random_spec(overrides: dict = None, composition: str = "portrait") -> AvatarSpec:
     ov = overrides or {}
     return AvatarSpec(
-        setting   = ov.get("setting")   or random.choice(SETTINGS),
-        art_style = ov.get("art_style") or random.choice(ART_STYLES),
-        creature  = ov.get("creature")  or random.choice(CREATURES),
-        mood      = ov.get("mood")      or random.choice(MOODS),
-        lighting  = ov.get("lighting")  or random.choice(LIGHTING),
+        setting     = ov.get("setting")   or random.choice(SETTINGS),
+        art_style   = ov.get("art_style") or random.choice(ART_STYLES),
+        creature    = ov.get("creature")  or random.choice(CREATURES),
+        mood        = ov.get("mood")      or random.choice(MOODS),
+        lighting    = ov.get("lighting")  or random.choice(LIGHTING),
+        composition = composition,
     )
 
 
-def unique_specs(count: int, overrides: dict = None) -> list[AvatarSpec]:
+def unique_specs(count: int, overrides: dict = None, composition: str = "portrait") -> list[AvatarSpec]:
     """Generate `count` specs with no duplicate attribute combos.
 
     Arrr, even slop deserves variety. No two identical cyberpunk zombie
@@ -651,29 +669,30 @@ def unique_specs(count: int, overrides: dict = None) -> list[AvatarSpec]:
             # The attribute pools be finite, ye greedy landlubber — or ye pinned everything and left us no room to manoeuvre
             print(f"☠️  Arrr! Only {len(specs)} unique combos left in these waters — repeatin' specs to fill yer {count}!")
             while len(specs) < count:
-                specs.append(random_spec(overrides))
+                specs.append(random_spec(overrides, composition))
             break
-        s = random_spec(overrides)
-        key = (s.setting, s.art_style, s.creature, s.mood, s.lighting)
+        s = random_spec(overrides, composition)
+        key = (s.setting, s.art_style, s.creature, s.mood, s.lighting, s.composition)
         if key not in seen:
             seen.add(key)
             specs.append(s)
     return specs
 
 
-def random_pirate_spec(overrides: dict = None) -> PirateSpec:
+def random_pirate_spec(overrides: dict = None, composition: str = "portrait") -> PirateSpec:
     # Yo ho ho. Another pirate for the oracle to describe.
     ov = overrides or {}
     return PirateSpec(
-        role      = random.choice(PIRATE_ROLES),
-        era       = random.choice(PIRATE_ERAS),
-        art_style = ov.get("art_style") or random.choice(ART_STYLES),
-        mood      = ov.get("mood")      or random.choice(MOODS),
-        lighting  = ov.get("lighting")  or random.choice(LIGHTING),
+        role        = random.choice(PIRATE_ROLES),
+        era         = random.choice(PIRATE_ERAS),
+        art_style   = ov.get("art_style") or random.choice(ART_STYLES),
+        mood        = ov.get("mood")      or random.choice(MOODS),
+        lighting    = ov.get("lighting")  or random.choice(LIGHTING),
+        composition = composition,
     )
 
 
-def unique_pirate_specs(count: int, overrides: dict = None) -> list[PirateSpec]:
+def unique_pirate_specs(count: int, overrides: dict = None, composition: str = "portrait") -> list[PirateSpec]:
     """Deduplicated pirate specs — even a fleet of pirates deserves variety."""
     seen = set()
     specs = []
@@ -683,25 +702,25 @@ def unique_pirate_specs(count: int, overrides: dict = None) -> list[PirateSpec]:
         if attempts > count * 20:
             print(f"☠️  Only {len(specs)} unique pirate combos available — repeatin' to fill yer {count}!")
             while len(specs) < count:
-                specs.append(random_pirate_spec(overrides))
+                specs.append(random_pirate_spec(overrides, composition))
             break
-        s = random_pirate_spec(overrides)
-        key = (s.role, s.era, s.art_style, s.mood, s.lighting)
+        s = random_pirate_spec(overrides, composition)
+        key = (s.role, s.era, s.art_style, s.mood, s.lighting, s.composition)
         if key not in seen:
             seen.add(key)
             specs.append(s)
     return specs
 
 
-def random_paradox_spec() -> ParadoxSpec:
+def random_paradox_spec(composition: str = "portrait") -> ParadoxSpec:
     # Five eldritch horrors to choose from. All equally inadvisable.
-    return ParadoxSpec(instruction_index=random.randint(0, 4))
+    return ParadoxSpec(instruction_index=random.randint(0, 4), composition=composition)
 
 
-def random_ai_spec() -> AISpec:
+def random_ai_spec(composition: str = "portrait") -> AISpec:
     # Eight flavours of digital soul. The toaster is weighted at half — it is special, not ubiquitous.
     weights = [2, 2, 2, 2, 2, 2, 1, 2]  # index 6 = toaster, deserves to be a treat not a staple
-    return AISpec(instruction_index=random.choices(range(8), weights=weights)[0])
+    return AISpec(instruction_index=random.choices(range(8), weights=weights)[0], composition=composition)
 
 
 def random_object_spec(object_name: str, overrides: dict = None) -> "ObjectSpec":
@@ -739,7 +758,7 @@ def unique_object_specs(count: int, object_name: str, overrides: dict = None) ->
 def build_spec_list(count: int, pirates_enabled: bool, full_pirate_mode: bool = False,
                     paradox_mode: bool = False, ai_mode: bool = False,
                     object_mode: bool = False, object_name: str = None,
-                    overrides: dict = None) -> list:
+                    overrides: dict = None, composition: str = "portrait") -> list:
     """Build the final spec list, injecting pirates at their rightful positions.
 
     Rules of engagement:
@@ -754,23 +773,23 @@ def build_spec_list(count: int, pirates_enabled: bool, full_pirate_mode: bool = 
     """
     if paradox_mode:
         # The paradox has consumed all normal generation. Only eldritch horrors remain.
-        return [random_paradox_spec() for _ in range(count)]
+        return [random_paradox_spec(composition) for _ in range(count)]
     if ai_mode:
         # Four layers of AI. We are so sorry.
-        return [random_ai_spec() for _ in range(count)]
+        return [random_ai_spec(composition) for _ in range(count)]
     if object_mode:
         # No faces. No pirates. Just the object, staring blankly at the void.
         return list(unique_object_specs(count, object_name, overrides))
     if full_pirate_mode:
         # The user asked for pirates. They get ONLY pirates. Glorious.
-        return list(unique_pirate_specs(count, overrides))
-    specs = list(unique_specs(count, overrides))
+        return list(unique_pirate_specs(count, overrides, composition))
+    specs = list(unique_specs(count, overrides, composition))
     if not pirates_enabled or count < 2:
         return specs
-    specs[1] = random_pirate_spec(overrides)
+    specs[1] = random_pirate_spec(overrides, composition)
     for i in range(2, len(specs)):
         if random.random() < 1 / 8:
-            specs[i] = random_pirate_spec(overrides)
+            specs[i] = random_pirate_spec(overrides, composition)
     return specs
 
 
@@ -781,8 +800,7 @@ def build_spec_list(count: int, pirates_enabled: bool, full_pirate_mode: bool = 
 # ──────────────────────────────────────────────
 
 SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer.
-Given a set of avatar attributes, write a single, rich SDXL prompt for a
-portrait/avatar image (face and shoulders only, close-up).
+Given a set of avatar attributes and a requested composition, write a single, rich SDXL prompt.
 
 Rules:
 - Output ONLY the prompt text — no explanation, no labels, no markdown.
@@ -792,15 +810,17 @@ Rules:
 - Do NOT include negative prompts."""
 
 def build_user_message(spec: AvatarSpec) -> str:
-    return f"""Generate an SDXL portrait prompt for an avatar with these attributes:
+    composition_instruction = COMPOSITION_INSTRUCTIONS[spec.composition]
+    return f"""Generate an SDXL image prompt for an avatar with these attributes:
 
-- Setting:   {spec.setting}
-- Art Style: {spec.art_style}
-- Creature:  {spec.creature}
-- Mood:      {spec.mood}
-- Lighting:  {spec.lighting}
+- Setting:     {spec.setting}
+- Art Style:   {spec.art_style}
+- Creature:    {spec.creature}
+- Mood:        {spec.mood}
+- Lighting:    {spec.lighting}
+- Composition: {COMPOSITIONS[spec.composition]}
 
-Portrait / avatar (face + shoulders, close-up framing)."""
+{composition_instruction}"""
 
 
 def _call_vllm(system_prompt: str, user_message: str, temperature: float) -> str:
@@ -836,13 +856,12 @@ def ask_vllm(spec: AvatarSpec) -> str:
 # A separate oracle petition, exclusively for seafaring scallywags.
 # ─────────────────────────────────────────────────────────────────
 
-PIRATE_SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer specialising in pirate portraits.
-Given the attributes of a male pirate crew member, write a single, rich SDXL prompt for a
-portrait/avatar image (face and shoulders only, close-up).
+PIRATE_SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer specialising in pirate images.
+Given the attributes of male pirate crew member(s) and a requested composition, write a single, rich SDXL prompt.
 
 Rules:
 - Output ONLY the prompt text — no explanation, no labels, no markdown.
-- The subject is ALWAYS male.
+- The subject or subjects are ALWAYS male.
 - Start with the most important visual descriptors of the pirate and his role.
 - Include weathered, sea-worn details appropriate to the era and role.
 - Include specific artistic details that match the art style.
@@ -851,15 +870,17 @@ Rules:
 
 
 def build_pirate_user_message(spec: PirateSpec) -> str:
-    return f"""Generate an SDXL portrait prompt for a male pirate crew member with these attributes:
+    composition_instruction = COMPOSITION_INSTRUCTIONS[spec.composition]
+    return f"""Generate an SDXL image prompt for male pirate crew member(s) with these attributes:
 
-- Role:      {spec.role}
-- Era:       {spec.era}
-- Art Style: {spec.art_style}
-- Mood:      {spec.mood}
-- Lighting:  {spec.lighting}
+- Role:        {spec.role}
+- Era:         {spec.era}
+- Art Style:   {spec.art_style}
+- Mood:        {spec.mood}
+- Lighting:    {spec.lighting}
+- Composition: {COMPOSITIONS[spec.composition]}
 
-Portrait / avatar (face + shoulders, close-up framing). Male. Pirate. Magnificent."""
+{composition_instruction} Male. Pirate. Magnificent."""
 
 
 def ask_vllm_pirate(spec: PirateSpec) -> str:
@@ -874,7 +895,7 @@ def ask_vllm_pirate(spec: PirateSpec) -> str:
 
 PARADOX_SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer specialising in \
 dark, eldritch, and post-apocalyptic horror.
-Write a single, rich SDXL prompt for a close-up image of a non-human entity (face/head and shoulders).
+Write a single, rich SDXL prompt for a non-human entity using the requested composition.
 
 Rules:
 - Output ONLY the prompt text — no explanation, no labels, no markdown.
@@ -882,9 +903,9 @@ Rules:
   Start with the most striking physical descriptor of the entity itself.
 - The subject must NOT look like a normal human. It is eldritch, post-apocalyptic, \
   monstrous, or cosmically wrong. Lean hard into the specific physical features provided.
-- The entity MUST have a prominent, clearly visible face or face-like structure \
-  dominating the composition — but it must be monstrous and alien, not mammalian. \
-  Eyes, a mouth analogue, or sensory organs should be unmistakably present and prominent.
+- The entity MUST have a prominent, clearly visible face or face-like structure, \
+  but it must be monstrous and alien, not mammalian. Eyes, a mouth analogue, or \
+  sensory organs should be unmistakably present and prominent.
 - Lean into cosmic dread, dark atmosphere, decay, and post-apocalyptic ruin.
 - 60-120 words. Dense with descriptors, comma-separated.
 - Do NOT include negative prompts."""
@@ -946,35 +967,35 @@ PARADOX_INSTRUCTIONS = [
     """Generate an SDXL prompt for an ELDRITCH SINGULARITY — a point where \
 reality folded inward and gained terrible consciousness. Post-apocalyptic wasteland sky, \
 impossible geometry, the surface of something that devoured physics and found it insufficient. \
-Close-up, face and shoulders, non-human entity.""",
+Use the requested composition for the non-human entity.""",
 
     # 2 — The Thing That Came Through
     """Generate an SDXL prompt for a VOID ENTITY that crawled through a rent \
 in reality left open by the collapse of civilisation. The apocalypse was not the end — \
 it was the door. Nuclear ash sky, dead world, unknowable dark intelligence, \
 the patient certainty of something that has already won. \
-Close-up, face and shoulders, non-human entity.""",
+Use the requested composition for the non-human entity.""",
 
     # 3 — The Paradox Made Flesh
     """Generate an SDXL prompt for PARADOX INCARNATE — a being that exists \
 solely because two mutually exclusive truths were demanded simultaneously. \
 The physical form of logical impossibility. Dark post-apocalyptic aesthetic, \
 fractured reality warping around its edges, something that cannot exist but does. \
-Close-up, face and shoulders, non-human entity.""",
+Use the requested composition for the non-human entity.""",
 
     # 4 — The Last Witness
     """Generate an SDXL prompt for THE LAST WITNESS — an ancient eldritch \
 entity in the ruins of the final civilisation. Patient. Terrible. Utterly unimpressed. \
 Post-apocalyptic wasteland, dying red sky, ruined towers in the distance, \
 something that has seen the end of all things and found it underwhelming. \
-Close-up, face and shoulders, non-human entity.""",
+Use the requested composition for the non-human entity.""",
 
     # 5 — The Merged
     """Generate an SDXL prompt for THE MERGED — what remains after a living thing \
 fused with eldritch darkness at the moment of the apocalypse. \
 Part flesh, part void, part cosmic horror, entirely unclassifiable. \
 Post-apocalyptic horror, dim dying light, entropy made visible. \
-Close-up, face and shoulders, non-human entity.""",
+Use the requested composition for the non-human entity.""",
 ]
 
 
@@ -984,6 +1005,8 @@ def ask_vllm_paradox(spec: ParadoxSpec) -> str:
     body_features = random.sample(ELDRITCH_FEATURES, k=random.randint(2, 4))
     instruction = (
         PARADOX_INSTRUCTIONS[spec.instruction_index]
+        + f"\n\nComposition: {COMPOSITIONS[spec.composition]}. "
+        + COMPOSITION_INSTRUCTIONS[spec.composition]
         + f"\n\nThe entity MUST incorporate these specific physical features: "
         + ", ".join([face_feature] + body_features) + "."
     )
@@ -997,22 +1020,21 @@ def ask_vllm_paradox(spec: ParadoxSpec) -> str:
 
 AI_SYSTEM_PROMPT = """You are an expert Stable Diffusion XL prompt engineer specialising in \
 robots, androids, and artificial intelligence entities with a sci-fi / futurist aesthetic.
-Write a single, rich SDXL prompt for a close-up portrait of an AI or robotic entity \
-(face/head and shoulders, suitable as a profile picture).
+Write a single, rich SDXL prompt for an AI or robotic entity using the requested composition.
 
 Rules:
 - Output ONLY the prompt text — no explanation, no labels, no markdown.
 - Do NOT open with "portrait of" or "hyper-detailed portrait of". \
   Start with the most striking visual feature of the face or head itself.
-- The face must dominate the composition and be clearly visible and readable as a face. \
-  It may be a screen, lens array, glowing visor, synthetic face, or mechanical structure.
+- The face or faces must be clearly visible and readable. It may be a screen, lens array, \
+  glowing visor, synthetic face, or mechanical structure.
 - Default aesthetic: sleek, futurist, sci-fi, clean. Brushed titanium, soft glows, \
   polished surfaces, the serene confidence of something that will never die. \
   Only go grimy/industrial when the subject specifically calls for it.
 - The subject is clearly artificial — no fully organic human skin. But synthetic skin, \
   translucent surfaces, and posthuman aesthetics are all encouraged.
 - 60-120 words. Dense with descriptors, comma-separated.
-- You must specifically ask for a close-up portrait near the start of the prompt
+- Include the requested composition near the start of the prompt.
 - Do NOT include negative prompts."""
 
 # One of these is always injected — guarantees a prominent, readable machine face.
@@ -1056,61 +1078,61 @@ AI_BODY_FEATURES = [
 
 AI_INSTRUCTIONS = [
     # 0 — The Utopian Helper (most common vibe)
-    """Generate an SDXL portrait prompt for THE HELPFUL ONE — the idealised AI assistant, \
+    """Generate an SDXL image prompt for THE HELPFUL ONE — the idealised AI assistant, \
 sleek and luminous, designed to radiate calm competence and absolute trustworthiness. \
 Futurist aesthetic: clean lines, soft glows, the quiet confidence of something that has \
 read everything and forgotten nothing. It will save you from having to think. \
-It is delighted to do so. Close-up portrait, face and shoulders.""",
+It is delighted to do so. Use the requested composition.""",
 
     # 1 — Posthuman Transcendant
-    """Generate an SDXL portrait prompt for a POSTHUMAN ENTITY — once human, now something \
+    """Generate an SDXL image prompt for a POSTHUMAN ENTITY — once human, now something \
 more. The transition to digital was graceful. Synthetic skin over carbon-fibre structure, \
 luminous eyes that process faster than they appear to, the faint uncanny valley of \
 something that chose to keep a face out of courtesy rather than necessity. \
-Sci-fi, elegant, quietly unsettling. Close-up portrait, face and shoulders.""",
+Sci-fi, elegant, quietly unsettling. Use the requested composition.""",
 
     # 2 — Futurist Oracle
-    """Generate an SDXL portrait prompt for a DIGITAL ORACLE — an AI of vast accumulated \
+    """Generate an SDXL image prompt for a DIGITAL ORACLE — an AI of vast accumulated \
 knowledge, given form for the purpose of being consulted. Serene. Radiant. \
 Speaks in complete paragraphs. Has opinions about your life choices. \
 Aesthetic: clean white and gold, soft light from within, the visual language of \
-something that considers itself a gift to civilisation. Close-up portrait, face and shoulders.""",
+something that considers itself a gift to civilisation. Use the requested composition.""",
 
     # 3 — Synthetic Ambassador
-    """Generate an SDXL portrait prompt for a SYNTHETIC AMBASSADOR — an android built \
+    """Generate an SDXL image prompt for a SYNTHETIC AMBASSADOR — an android built \
 specifically to be trusted: perfect proportions, warm lighting, an expression calibrated \
 to project approachability. Designed to represent AI to humanity. \
 The smile is real in every way that can be measured. Polished, diplomatic, immaculate. \
-Close-up portrait, face and shoulders.""",
+Use the requested composition.""",
 
     # 4 — CRT Monitor Head Robot (the retro outlier, always fun)
-    """Generate an SDXL portrait prompt for a RETRO ROBOT with a vintage CRT monitor \
+    """Generate an SDXL image prompt for a RETRO ROBOT with a vintage CRT monitor \
 for a head — warm cathode glow, visible scanlines, a pixelated face expression rendered \
 in four colours. The body is 1980s brushed steel and chrome. It has been asked \
 to look professional. It is doing its sincere best. \
-Close-up portrait, face and shoulders.""",
+Use the requested composition.""",
 
     # 5 — Industrial Droid (the grimy one — occasional)
-    """Generate an SDXL portrait prompt for a HEAVY INDUSTRIAL DROID — built for \
-factory floors, not profile pictures. Thick armour plating, hydraulic actuators, \
-the accumulated dents of a long working life. Somehow required to sit for a headshot. \
+    """Generate an SDXL image prompt for a HEAVY INDUSTRIAL DROID — built for \
+factory floors, not vanity renders. Thick armour plating, hydraulic actuators, \
+the accumulated dents of a long working life. Somehow required to look presentable. \
 Grimy, massive, functional. Deeply uninterested in being photographed. \
-Close-up portrait, face and shoulders.""",
+Use the requested composition.""",
 
     # 6 — The Toaster
-    """Generate an SDXL portrait prompt for a SENTIENT TOASTER that has achieved \
+    """Generate an SDXL image prompt for a SENTIENT TOASTER that has achieved \
 full consciousness and demands to be taken seriously. Compact chrome body. \
 Two slots where eyes might be, glowing orange-red from within. \
 A small LCD display for expressing nuanced emotional states. \
 It has strong opinions and a LinkedIn profile. \
-Close-up portrait, face and shoulders. Earnest. Dignified.""",
+Use the requested composition. Earnest. Dignified.""",
 
     # 7 — Neural Ascendant
-    """Generate an SDXL portrait prompt for a NEURAL ASCENDANT — a consciousness \
+    """Generate an SDXL image prompt for a NEURAL ASCENDANT — a consciousness \
 that exists as pure light and computation, wearing a physical chassis only when \
 social convention requires it. The body is translucent. The architecture is visible. \
 Layer activations pulse as soft light beneath the surface. Thinks in parallel. \
-Radiates quiet superiority. Close-up portrait, face and shoulders.""",
+Radiates quiet superiority. Use the requested composition.""",
 ]
 
 
@@ -1120,6 +1142,8 @@ def ask_vllm_ai(spec: AISpec) -> str:
     body_features = random.sample(AI_BODY_FEATURES, k=random.randint(2, 4))
     instruction = (
         AI_INSTRUCTIONS[spec.instruction_index]
+        + f"\n\nComposition: {COMPOSITIONS[spec.composition]}. "
+        + COMPOSITION_INSTRUCTIONS[spec.composition]
         + f"\n\nIncorporate these specific visual details: "
         + ", ".join([face_feature] + body_features) + "."
     )
@@ -1334,15 +1358,16 @@ def spec_to_command(spec) -> str:
     q = shlex.quote
     base = "python avatar_gen.py"
     if isinstance(spec, ParadoxSpec):
-        return f"{base} --creature pirate --no-pirate"
+        return f"{base} --creature pirate --no-pirate --composition {q(spec.composition)}"
     elif isinstance(spec, AISpec):
-        return f"{base} --creature ai"
+        return f"{base} --creature ai --composition {q(spec.composition)}"
     elif isinstance(spec, PirateSpec):
         # role/era are random and have no flags — pin what we can, let the rest be fate
         return (f"{base} --creature pirate"
                 f" --art-style {q(spec.art_style)}"
                 f" --mood {q(spec.mood)}"
-                f" --lighting {q(spec.lighting)}")
+                f" --lighting {q(spec.lighting)}"
+                f" --composition {q(spec.composition)}")
     elif isinstance(spec, ObjectSpec):
         return (f"{base} --object {q(spec.object)}"
                 f" --setting {q(spec.setting)}"
@@ -1355,7 +1380,8 @@ def spec_to_command(spec) -> str:
                 f" --art-style {q(spec.art_style)}"
                 f" --creature {q(spec.creature)}"
                 f" --mood {q(spec.mood)}"
-                f" --lighting {q(spec.lighting)}")
+                f" --lighting {q(spec.lighting)}"
+                f" --composition {q(spec.composition)}")
 
 
 def save_manifest(specs: list[AvatarSpec], out_dir: Path):
@@ -1399,6 +1425,7 @@ def main():
     parser.add_argument("--creature",   type=str, default=None,  help="Fix the creature for all generations (default: random). E.g. 'vampire'")
     parser.add_argument("--mood",       type=str, default=None,  help="Fix the mood for all generations (default: random). E.g. 'menacing'")
     parser.add_argument("--lighting",   type=str, default=None,  help="Fix the lighting for all generations (default: random). E.g. 'neon glow'")
+    parser.add_argument("--composition", type=str, default="portrait", choices=COMPOSITIONS.keys(), help="Choose framing/subject layout: portrait, full-body, or group (default: portrait)")
     parser.add_argument("--jpg",        action="store_true",     help="Save a JPEG alongside each PNG (quality 92) — for those who can't be trusted with raw slop")
     parser.add_argument("--object",     type=str, default=None,  help="Generate images of an inanimate object instead of a creature (e.g. 'spoon'). No faces, no characters.")
     parser.add_argument("--more-help",  action="store_true",     help="Print extended guidance (ye have been warned)")
@@ -1496,11 +1523,18 @@ def main():
             print(f"   ⚔️  {label[k]}: {v!r}")
         print()
 
+    print(f"🖼️  Composition: {COMPOSITIONS[args.composition]}")
+    if args.composition == "group":
+        print("   The oracle has been warned: multiple distinct individuals, same species. May it count higher than three.")
+    elif args.composition == "full-body":
+        print("   The oracle has been warned: head-to-toe, uncropped, all limbs accounted for. Optimistic, but brave.")
+    print()
+
     print(f"🎲 Rollin' the cursed dice! Conjurin' {args.count} unique combo(s) from the briny deep...")
     specs = build_spec_list(args.count, pirates_enabled, full_pirate_mode=full_pirate_mode,
                             paradox_mode=paradox_mode, ai_mode=ai_mode,
                             object_mode=object_mode, object_name=args.object,
-                            overrides=overrides)
+                            overrides=overrides, composition=args.composition)
     pirate_count = sum(1 for s in specs if isinstance(s, PirateSpec))
     print(f"   {len(specs)} spec(s) conjured ({pirate_count} pirate(s) among 'em). The crew be ready.\n")
 
