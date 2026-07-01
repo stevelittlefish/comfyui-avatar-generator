@@ -16,11 +16,11 @@ A practical fix list from the code review. Keep it useful, keep it silly. Arrr.
         parser.error("--images-per must be >= 1")
     ```
 
-- [ ] Fix documentation/default drift
-  - [ ] `avatar_gen.py` currently defaults to `--count 1 --images-per 1`
-  - [ ] `README.md` and/or `AGENTS.md` mention older defaults like `--count 20 --images-per 2`
-  - [ ] Decide whether to update docs or restore old defaults
-  - [ ] Make README usage examples match actual behavior
+- [x] Fix documentation/default drift
+  - [x] `avatar_gen.py` currently defaults to `--count 1 --images-per 1`
+  - [x] `README.md` and/or `AGENTS.md` mention older defaults like `--count 20 --images-per 2`
+  - [x] Decide whether to update docs or restore old defaults
+  - [x] Make README usage examples match actual behavior
 
 ## Medium priority
 

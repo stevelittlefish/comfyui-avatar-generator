@@ -34,7 +34,7 @@ Prefer `./run.sh` for normal runs and smoke tests. It creates `./venv` if needed
 # Quick smoke test / CLI inspection
 ./run.sh --help
 
-# Set sail! Generate 20 combos × 2 images each (defaults)
+# Set sail! Generate 1 combo × 1 image (defaults)
 ./run.sh
 
 # Custom voyage

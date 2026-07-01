@@ -8,7 +8,7 @@ Arrr, this be a pipeline of pure slop. Three AIs, zero artistry, infinite
 cyberpunk vampire orcs. Ye have been warned.
 
 Usage:
-    python avatar_gen.py [--count 20] [--images-per 2] [--out ./avatars] [--jpg]
+    python avatar_gen.py [--count 1] [--images-per 1] [--out ./avatars] [--jpg]
                          [--setting "cyberpunk"] [--art-style "oil painting"]
                          [--creature "vampire"] [--mood "menacing"] [--lighting "neon glow"]
                          [--composition portrait|full-body|group]

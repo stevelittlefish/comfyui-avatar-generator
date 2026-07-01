@@ -20,7 +20,7 @@ The easiest way to run the generator is `run.sh`. It creates `./venv` if needed,
 
 ```bash
 ./run.sh --help
-./run.sh [--count 20] [--images-per 2] [--out ./avatars]
+./run.sh [--count 1] [--images-per 1] [--out ./avatars]
 ./run.sh --composition full-body --count 5
 ```
 
@@ -35,7 +35,7 @@ Or activate it for a longer voyage:
 
 ```bash
 source ./venv/bin/activate
-python avatar_gen.py [--count 20] [--images-per 2] [--out ./avatars]
+python avatar_gen.py [--count 1] [--images-per 1] [--out ./avatars]
 ```
 
 See `CLAUDE.md` for full configuration and architecture details.
