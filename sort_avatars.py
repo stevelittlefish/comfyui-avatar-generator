@@ -4,6 +4,7 @@ One AI classifying the output of another AI, which was prompted by yet another A
 We've built a recursive slop-sorting pipeline. The future is now.
 """
 
+import argparse
 import json
 import re
 import shutil
@@ -13,7 +14,7 @@ from pathlib import Path
 import requests
 from PIL import Image
 
-OUT_DIR = Path("out")
+DEFAULT_OUT_DIR = Path("out")
 VLLM_BASE = "http://ai.lemon.com:8008"
 VLLM_MODEL = "gemma4-31b"
 CATEGORIES = ["human", "animal", "machine", "creature", "other"]
@@ -85,15 +86,31 @@ def classify_with_llm(prompt_text: str) -> str:
         return "other"
 
 
-def main():
-    if not OUT_DIR.exists():
-        raise SystemExit(f"No output directory found: {OUT_DIR}")
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Sort generated avatar PNGs into category folders. Slop in, tidier slop out."
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_OUT_DIR,
+        help=f"directory containing generated PNGs (default: {DEFAULT_OUT_DIR})",
+    )
+    return parser.parse_args()
 
-    pngs = sorted(p for p in OUT_DIR.iterdir() if p.suffix == ".png" and p.parent == OUT_DIR)
+
+def main():
+    args = parse_args()
+    out_dir = args.out
+
+    if not out_dir.exists():
+        raise SystemExit(f"No output directory found: {out_dir}")
+
+    pngs = sorted(p for p in out_dir.iterdir() if p.suffix == ".png" and p.parent == out_dir)
     print(f"Sorting {len(pngs)} images — asking Gemma 4 to classify what it helped create...\n")
 
     for cat in CATEGORIES:
-        (OUT_DIR / cat).mkdir(exist_ok=True)
+        (out_dir / cat).mkdir(exist_ok=True)
 
     counts = {cat: 0 for cat in CATEGORIES}
 
@@ -106,7 +123,7 @@ def main():
             category = classify_with_llm(prompt_text)
             print(f"[{i:3d}/{len(pngs)}] {category:10s}  {png.name}")
 
-        shutil.move(str(png), str(OUT_DIR / category / png.name))
+        shutil.move(str(png), str(out_dir / category / png.name))
         counts[category] += 1
 
     print(f"\nArrr, the slop be sorted!")

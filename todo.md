@@ -45,8 +45,8 @@ A practical fix list from the code review. Keep it useful, keep it silly. Arrr.
         raise SystemExit(f"No output directory found: {OUT_DIR}")
     ```
 
-- [ ] Add CLI options to `sort_avatars.py`
-  - [ ] `--out`, defaulting to `out`
+- [x] Add CLI options to `sort_avatars.py`
+  - [x] `--out`, defaulting to `out`
   - Optional but useful, because hardcoded `OUT_DIR = Path("out")` is limiting
 
 ## Low priority / cleanup
@@ -81,8 +81,8 @@ After fixes, run:
 - [ ] `./run.sh --help`
 - [ ] `./venv/bin/python avatar_gen.py --count 0` should fail clearly
 - [ ] `./venv/bin/python avatar_gen.py --images-per 0` should fail clearly
-- [ ] `./venv/bin/python sort_avatars.py --help` if CLI args are added
-- [ ] `./venv/bin/python sort_avatars.py --out does-not-exist` should fail clearly if `--out` is added
+- [x] `./venv/bin/python sort_avatars.py --help` if CLI args are added
+- [x] `./venv/bin/python sort_avatars.py --out does-not-exist` should fail clearly if `--out` is added
 
 ## Notes
 
